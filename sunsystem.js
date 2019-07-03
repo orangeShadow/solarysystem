@@ -1,7 +1,7 @@
 /*jshint esversion: 6 */
 
 const fov = 70;
-const zPosition = 800;
+const zPosition = 3500;
 const gui = new dat.GUI();
 
 
@@ -31,7 +31,7 @@ const planets  = {
             decay:2,
             position: new THREE.Vector3(0,0,0)
         },
-        diamRation: 30,
+        diamRation: 100,
         selfSpeedRorationRatio:0.000124,
         sunOrbitRotationSpeed: 0, //does not use for sun
         orbit:0 //does not use for sun,
@@ -77,7 +77,6 @@ const planets  = {
                 textureImg: './imgs/moonmap1k.jpg',
                 selfSpeedRorationRatio: 0.018,
                 position: new THREE.Vector3(19, 0, 0),
-
             }
         },
         material: "lambert",
