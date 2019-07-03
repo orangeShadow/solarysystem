@@ -1,0 +1,34 @@
+{
+  "name": "solarysystem",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sunsystem.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "http-server ./ -o -c 1 -a localhost",
+    "lint": "eslint .",
+    "start": "npm run serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orangeShadow/solarysystem.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/orangeShadow/solarysystem/issues"
+  },
+  "homepage": "https://github.com/orangeShadow/solarysystem#readme",
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-plugin-import": "^2.18.0",
+    "http-server": "^0.11.1",
+    "husky": "^3.0.0"
+  }
+}
