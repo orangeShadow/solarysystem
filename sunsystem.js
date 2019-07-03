@@ -1,6 +1,6 @@
 /*jshint esversion: 6 */
 
-const fov = 70;
+const fov = 90;
 const zPosition = 3500;
 const gui = new dat.GUI();
 
@@ -182,13 +182,15 @@ const planets  = {
     }
 }
 
-class PlanetCreator {
-    constructor(planets, config) {                
-        this.planets = planets;
+class SolarSystemCreator {
+    constructor(planets, config) {
         this.config = config;
+        this.planets = planets;
+        this.meshPlanets = [];
+        this.meshOrbits = [];       
     }
 
-    createPlanetMesh(planet) {
+    _createPlanetMesh(planet) {
         let texture = null;
         let material = null;
         
@@ -217,7 +219,7 @@ class PlanetCreator {
         if(planet.satellites) {
             for(let k in planet.satellites){
                 let sattelite = planet.satellites[k];
-                let satteliteMesh = this.createPlanetMesh(sattelite);
+                let satteliteMesh = this._createPlanetMesh(sattelite);
                 mesh.add(satteliteMesh);                
             }
         }
@@ -235,22 +237,7 @@ class PlanetCreator {
         mesh.rotation.x= Math.PI/2;
     
         return mesh;
-    }
-    
-    getOrbit(numeric, offset = 0) {
-        return  this.earthSize*6+50*numeric - offset;
-    }
-}
-
-class SolarSystemCreator {
-    constructor(planets, config) {
-        this.config = config;
-        this.planets = planets;
-        this._planetCreator = new PlanetCreator(planets, config);
-
-        this.meshPlanets = [];
-        this.meshOrbits = [];       
-    }
+    } 
 
     createSolarSystem(scene) {
         //scene.add(this._createSkybox());
@@ -259,7 +246,7 @@ class SolarSystemCreator {
         scene.add(solarSystem);
         for(let k in this.planets) {    
             let planet = planets[k];            
-            let mesh = this._planetCreator.createPlanetMesh(planet); 
+            let mesh = this._createPlanetMesh(planet); 
             solarSystem.add(mesh);                        
             if(planet.light) {                
                 let light = new THREE.PointLight( planet.light.color, planet.light.intensity, planet.light.distance, planet.light.decay);
