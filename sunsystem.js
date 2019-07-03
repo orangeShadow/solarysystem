@@ -2,6 +2,7 @@
 
 const fov = 90;
 const zPosition = 3500;
+const sceneSize = 10000;
 const gui = new dat.GUI();
 
 
@@ -187,9 +188,51 @@ class SolarSystemCreator {
         this.config = config;
         this.planets = planets;
         this.meshPlanets = [];
-        this.meshOrbits = [];       
+        this.meshOrbits = [];     
+        this.enableSkybox = true;  
+        this.enableOrbit = true; 
     }
 
+    /**
+     * Create solar system with skybox, planets, orbit
+     * 
+     * @param scene 
+     * @param int sceneSize
+     */
+    createSolarSystem(scene, sceneSize) {
+        if(this.enableSkybox) {
+            scene.add(this._createSkybox(sceneSize));
+        }
+        
+        
+        let solarSystem =  new THREE.Object3D();     
+        scene.add(solarSystem);
+        for(let k in this.planets) {    
+            let planet = planets[k];            
+            let mesh = this._createPlanetMesh(planet); 
+            solarSystem.add(mesh);                        
+            if(planet.light) {                
+                let light = new THREE.PointLight( planet.light.color, planet.light.intensity, planet.light.distance, planet.light.decay);
+                light.position.set(planet.light.position.x, planet.light.position.y, planet.light.position.z);              
+                mesh.add(light);
+            }
+            this.meshPlanets.push(mesh);
+        }
+        
+        this.solarSystem = solarSystem; 
+
+        if(this.enableOrbit) {
+            this._createOrbits(scene);
+        }
+
+        return this.solarSystem; 
+    }
+
+    /**
+     * Create planet mesh by params
+     * 
+     * @param planet 
+     */
     _createPlanetMesh(planet) {
         let texture = null;
         let material = null;
@@ -239,32 +282,13 @@ class SolarSystemCreator {
         return mesh;
     } 
 
-    createSolarSystem(scene) {
-        //scene.add(this._createSkybox());
-        
-        let solarSystem =  new THREE.Object3D();     
-        scene.add(solarSystem);
-        for(let k in this.planets) {    
-            let planet = planets[k];            
-            let mesh = this._createPlanetMesh(planet); 
-            solarSystem.add(mesh);                        
-            if(planet.light) {                
-                let light = new THREE.PointLight( planet.light.color, planet.light.intensity, planet.light.distance, planet.light.decay);
-                light.position.set(planet.light.position.x, planet.light.position.y, planet.light.position.z);              
-                mesh.add(light);
-            }
-            this.meshPlanets.push(mesh);
-        }
-        
-        this.solarSystem = solarSystem; 
-
-        this._createOrbits(scene);
-
-        return this.solarSystem; 
-    }
-
-    _createSkybox() {
-        const skyboxGeometry = new THREE.CubeGeometry(5000, 5000, 5000);
+    /**
+     * Create box with star
+     * 
+     * @param planet 
+     */
+    _createSkybox(sceneSize) {
+        const skyboxGeometry = new THREE.CubeGeometry(sceneSize, sceneSize, sceneSize);
 
         const skyboxMaterials = [
             new THREE.MeshBasicMaterial({
@@ -301,6 +325,10 @@ class SolarSystemCreator {
         return skybox;
     }
 
+    /**
+     * Create orbits for planets
+     * @param scene 
+     */
     _createOrbits(scene) {
         for(let k in this.planets) { 
             if (k === "sun") {
@@ -327,6 +355,12 @@ class SolarSystemCreator {
         });   
     }
 
+    /**
+     * Show Axe for planet
+     * X - red
+     * Y - green
+     * Z - blue
+     */
     showAxios() {
         this.getMeshPlanets().forEach((item)=>{
             const axes = new THREE.AxesHelper(30);
@@ -369,18 +403,19 @@ window.onload = function(){
     const scene = new THREE.Scene();
     
     //Создаем камеру
-    const camera = new THREE.PerspectiveCamera(fov, width/height, 0.1, 10000);
+    const camera = new THREE.PerspectiveCamera(fov, width/height, 0.1, sceneSize);
     camera.position.set(0,0,zPosition);
 
     const controls = new THREE.OrbitControls( camera, renderer.domElement );
             
     solarSystemCreator = new SolarSystemCreator(planets, config);
-    
-    solarSystemCreator.createSolarSystem(scene);
+
+    solarSystemCreator.enableSkybox = false;
+    //solarSystemCreator.enableSkybox = false;
+
+    solarSystemCreator.createSolarSystem(scene, sceneSize);
 
     //solarSystemCreator.showAxios();
-
-    let currentPlanet = null;
 
     function onDocumentMouseDown( event ) 
     {
