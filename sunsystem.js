@@ -140,6 +140,8 @@ class SolarSystemCreator {
       this.planetOrbitPosition[item.name] = 0;
     });
 
+    this.planetOrbitPosition.venus = 3*Math.PI/2;
+
     this.enableSkybox = true;
     this.enableOrbit = true;
     this.enableSunOrbitAnimate = true;
@@ -462,7 +464,7 @@ window.onload = function onload() {
           solarSystemCreator.hideOrbits();
 
           const planet = planets[targetObject.name];
-          const orbitPosition = solarSystemCreator.getPlanetPositionByName(planet.name);
+          let orbitPosition = solarSystemCreator.getPlanetPositionByName(planet.name);
           let newPositionX = config.orbitRadiusCalculate(planets.sun, planet.radiusOffset - config.diam(planet.diamRation) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
           let newPositionY = config.orbitRadiusCalculate(planets.sun, planet.radiusOffset - config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
           let newPositionZ = 0;
@@ -470,10 +472,15 @@ window.onload = function onload() {
           const cosX = Math.cos(orbitPosition);
 
           let rotationAngel = 0;
-          if (cosX > 0) {
-            rotationAngel = -Math.PI / 2;
-          } else {
-            rotationAngel = Math.PI / 2;
+
+          orbitPosition = orbitPosition%(2*Math.PI);
+
+          if(orbitPosition < Math.PI/4 && orbitPosition> 0) {
+            rotationAngel = -orbitPosition-Math.PI/2;
+          } else if(orbitPosition > Math.PI/4 && orbitPosition < Math.PI/2) {
+            rotationAngel = -orbitPosition;
+          } else if(orbitPosition > Math.PI/2  ) {
+            rotationAngel = orbitPosition - Math.PI/2;
           }
 
           let currentTarget = {
@@ -488,9 +495,16 @@ window.onload = function onload() {
             x: newPositionX,
             y: newPositionY,
             z: 0,
-            rX: 0,
-            rY: rotationAngel,
-            rZ: rotationAngel
+            rX: Math.PI/2,
+            rY:  orbitPosition - Math.PI/2,
+            //rY: Math.PI - (Math.PI/4+orbitPosition),
+            //rY: -Math.PI/2 + orbitPosition,
+            //rY: -Math.PI/2 + orbitPosition, //>180
+            //rY: Math.PI-orbitPosition, //>135
+            //rY: orbitPosition-Math.PI/2, // >90
+            //rY: -orbitPosition,  //>45
+            //rY: -orbitPosition-Math.PI/2, // <45
+            rZ: 0
           };
           new TWEEN.Tween(currentTarget)
             .to(newPositon, 2000)
