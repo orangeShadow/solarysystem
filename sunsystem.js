@@ -396,8 +396,8 @@ window.onload = function onload() {
   const zPosition = 600;
   const sceneSize = 5000;
   const gui = new dat.GUI();
-  const width = window.innerWidth * 2;
-  const height = window.innerHeight * 2;
+  const width = window.innerWidth * window.devicePixelRatio;
+  const height = window.innerHeight * window.devicePixelRatio;
 
   const canvas = document.getElementById('canvas');
   canvas.width = width;
@@ -449,12 +449,8 @@ window.onload = function onload() {
 
   gui.open();
 
-  function onDocumentMouseDown(event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    requestAnimationFrame(() => {
-      const intersects = raycaster.intersectObjects(solarSystemCreator.getMeshPlanets());
+  function runToPlanet() {
+    const intersects = raycaster.intersectObjects(solarSystemCreator.getMeshPlanets());
       if (intersects.length > 0) {
         intersects.forEach((obj) => {
           if (obj.object.name === 'sun') {
@@ -497,13 +493,6 @@ window.onload = function onload() {
             z: 0,
             rX: Math.PI/2,
             rY:  orbitPosition - Math.PI/2,
-            //rY: Math.PI - (Math.PI/4+orbitPosition),
-            //rY: -Math.PI/2 + orbitPosition,
-            //rY: -Math.PI/2 + orbitPosition, //>180
-            //rY: Math.PI-orbitPosition, //>135
-            //rY: orbitPosition-Math.PI/2, // >90
-            //rY: -orbitPosition,  //>45
-            //rY: -orbitPosition-Math.PI/2, // <45
             rZ: 0
           };
           new TWEEN.Tween(currentTarget)
@@ -522,6 +511,22 @@ window.onload = function onload() {
             .start();
         });
       }
+  }
+
+  function onDocumentMouseDown(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    requestAnimationFrame(() => {
+      runToPlanet();
+    });
+  }
+
+  function onDocumentTouchEnd(event) {
+    mouse.x = +(event.targetTouches[0].pageX / window.innerWidth) * 2 +-1;
+    mouse.y = -(event.targetTouches[0].pageY / window.innerHeight) * 2 + 1;
+    requestAnimationFrame(() => {
+      runToPlanet();
     });
   }
 
@@ -544,5 +549,6 @@ window.onload = function onload() {
 
   loop();
 
-  document.addEventListener('mousedown', onDocumentMouseDown, false);
+  canvas.addEventListener('mousedown', onDocumentMouseDown, false);
+  canvas.addEventListener('touchend', onDocumentTouchEnd, false);
 };
