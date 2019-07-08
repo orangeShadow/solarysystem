@@ -5,6 +5,7 @@ module.exports = {
     extends: "airbnb-base",
     globals: {
         THREE: true,
+        TWEEN: true,
         dat: true,
         window: true,
         document: true,

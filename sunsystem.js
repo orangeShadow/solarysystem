@@ -28,7 +28,7 @@ const planets = {
     },
     diamRation: 5,
     selfSpeedRorationRatio: 0.000124,
-    sunOrbitRotationSpeed: 0
+    sunOrbitRotationSpeed: 0,
   },
   mercury: {
     material: 'lambert',
@@ -37,7 +37,7 @@ const planets = {
     diamRation: 0.41,
     selfSpeedRorationRatio: 0.001,
     sunOrbitRotationSpeed: 0.011,
-    radiusOffset: 50
+    radiusOffset: 50,
   },
   venus: {
     material: 'lambert',
@@ -46,7 +46,7 @@ const planets = {
     diamRation: 0.95,
     selfSpeedRorationRatio: 0.002,
     sunOrbitRotationSpeed: 0.004,
-    radiusOffset: 100
+    radiusOffset: 100,
   },
   earth: {
     satellites: {
@@ -58,7 +58,7 @@ const planets = {
         position: new THREE.Vector3(19, 0, 0),
         animate(item, config) {
           item.rotation += config.calculateSelfSpeedRoration(this.selfSpeedRorationRatio);
-        }
+        },
       },
     },
     material: 'lambert',
@@ -98,19 +98,19 @@ const planets = {
   saturn: {
     satellites: {
       ring: {
-        name:"ring",
+        name: 'ring',
         selfSpeedRorationRatio: 0,
         create(planet, config) {
-          let mesh =  new THREE.Mesh(new THREE.XRingGeometry(1.2 * config.diam(planet.diamRation), 2 * config.diam(planet.diamRation), 2 * 32, 5, 0, Math.PI * 2), new THREE.MeshBasicMaterial({
+          const mesh = new THREE.Mesh(new THREE.XRingGeometry(1.2 * config.diam(planet.diamRation), 2 * config.diam(planet.diamRation), 2 * 32, 5, 0, Math.PI * 2), new THREE.MeshBasicMaterial({
             map: THREE.ImageUtils.loadTexture('imgs/saturn-rings.png'),
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.6
+            opacity: 0.6,
           }));
-          mesh.rotation.x = Math.PI/25 ;
+          mesh.rotation.x = Math.PI / 25;
           return mesh;
-        }
-      }
+        },
+      },
     },
     material: 'lambert',
     name: 'saturn',
@@ -156,7 +156,7 @@ class SolarSystemCreator {
       this.planetOrbitPosition[item.name] = 0;
     });
 
-    this.planetOrbitPosition.venus = 3*Math.PI/2;
+    this.planetOrbitPosition.venus = 3 * Math.PI / 2;
 
     this.enableSkybox = true;
     this.enableOrbit = true;
@@ -202,7 +202,7 @@ class SolarSystemCreator {
       this._createOrbits(scene);
     }
 
-    if(this.enableAxios) {
+    if (this.enableAxios) {
       this.showAxios();
     }
 
@@ -244,7 +244,7 @@ class SolarSystemCreator {
       Object.keys(planet.satellites).forEach((k) => {
         const sattelite = planet.satellites[k];
         let satteliteMesh = null;
-        if(!sattelite.create) {
+        if (!sattelite.create) {
           satteliteMesh = this._createPlanetMesh(sattelite);
         } else {
           satteliteMesh = sattelite.create(planet, this.config);
@@ -377,10 +377,10 @@ class SolarSystemCreator {
   animate(stopPlanet = null) {
     this.getMeshPlanets().forEach((item) => {
       if (item.name === 'sun') {
-        return false;
+        return;
       }
 
-      let planet = planets[item.name];
+      const planet = planets[item.name];
 
       if (this.enableSunOrbitAnimate && (!stopPlanet || (stopPlanet && item.name !== stopPlanet.name))) {
         this.runBySunOrbit(planet, item);
@@ -411,7 +411,7 @@ class SolarSystemCreator {
    * Движение планет вокруг своей оси
    */
   runBySelfOrbit(planet, mesh) {
-    //console.log(mesh.name, mesh.rotation.y);
+    // console.log(mesh.name, mesh.rotation.y);
     mesh.rotation.y += this.config.calculateSelfSpeedRoration(planet.selfSpeedRorationRatio);
   }
 
@@ -442,77 +442,76 @@ class SolarSystemCreator {
    */
   runToPlanet(raycaster, camera, controls) {
     const intersects = raycaster.intersectObjects(this.getMeshPlanets());
-      if (intersects.length > 0) {
-        intersects.forEach((obj) => {
-          if (obj.object.name === 'sun') {
-            return;
-          }
-          let targetObject = obj.object;
-          this.setTargetObject(targetObject);
-          this.hideOrbits();
+    if (intersects.length > 0) {
+      intersects.forEach((obj) => {
+        if (obj.object.name === 'sun') {
+          return;
+        }
+        const targetObject = obj.object;
+        this.setTargetObject(targetObject);
+        this.hideOrbits();
 
-          const planet = this.planets[targetObject.name];
-          let orbitPosition = this.getPlanetPositionByName(planet.name);
-          let newPositionX = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
-          let newPositionY = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
-          let newPositionZ = 0;
+        const planet = this.planets[targetObject.name];
+        let orbitPosition = this.getPlanetPositionByName(planet.name);
+        const newPositionX = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
+        const newPositionY = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
+        const newPositionZ = 0;
 
-          const cosX = Math.cos(orbitPosition);
 
-          let rotationAngel = 0;
+        orbitPosition %= (2 * Math.PI);
+        /*
+        TODO: Нам это надо?
+        let rotationAngel = 0;
+        if (orbitPosition < Math.PI / 4 && orbitPosition > 0) {
+          rotationAngel = -orbitPosition - Math.PI / 2;
+        } else if (orbitPosition > Math.PI / 4 && orbitPosition < Math.PI / 2) {
+          rotationAngel = -orbitPosition;
+        } else if (orbitPosition > Math.PI / 2) {
+          rotationAngel = orbitPosition - Math.PI / 2;
+        }
+        */
 
-          orbitPosition = orbitPosition%(2*Math.PI);
+        const currentTarget = {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z,
+          rX: camera.rotation.x,
+          rY: camera.rotation.y,
+          rZ: camera.rotation.z,
+        };
+        const newPositon = {
+          x: newPositionX,
+          y: newPositionY,
+          z: newPositionZ,
+          rX: Math.PI / 2,
+          rY: orbitPosition - Math.PI / 2,
+          rZ: 0,
+        };
+        controls.enabled = false;
 
-          if(orbitPosition < Math.PI/4 && orbitPosition> 0) {
-            rotationAngel = -orbitPosition-Math.PI/2;
-          } else if(orbitPosition > Math.PI/4 && orbitPosition < Math.PI/2) {
-            rotationAngel = -orbitPosition;
-          } else if(orbitPosition > Math.PI/2  ) {
-            rotationAngel = orbitPosition - Math.PI/2;
-          }
-
-          let currentTarget = {
-            x: camera.position.x,
-            y: camera.position.y,
-            z: camera.position.z,
-            rX: camera.rotation.x,
-            rY: camera.rotation.y,
-            rZ: camera.rotation.z,
-          };
-          let newPositon = {
-            x: newPositionX,
-            y: newPositionY,
-            z: newPositionZ,
-            rX: Math.PI/2,
-            rY:  orbitPosition - Math.PI/2,
-            rZ: 0
-          };
-          controls.enabled = false;
-          controls.target.set(targetObject.position.x, targetObject.position.y, targetObject.position.z);
-          camera.up.set(0, 0, 1);
-
-          new TWEEN.Tween(currentTarget)
-            .to(newPositon, 2000)
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .onUpdate(() => {
-              camera.position.x = currentTarget.x;
-              camera.position.y = currentTarget.y;
-              camera.position.z = currentTarget.z;
-              camera.rotation.x = currentTarget.rX;
-              camera.rotation.y = currentTarget.rY;
-              camera.rotation.z = currentTarget.rZ;
-            })
-            .onComplete(function () {
-              controls.enabled = true;
-            })
-            .start();
-        });
-      }
+        new TWEEN.Tween(currentTarget)
+          .to(newPositon, 2000)
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .onUpdate(() => {
+            camera.position.x = currentTarget.x;
+            camera.position.y = currentTarget.y;
+            camera.position.z = currentTarget.z;
+            camera.rotation.x = currentTarget.rX;
+            camera.rotation.y = currentTarget.rY;
+            camera.rotation.z = currentTarget.rZ;
+          })
+          .onComplete(() => {
+            controls.target.set(targetObject.position.x, targetObject.position.y, targetObject.position.z);
+            // controls.enabled = true;
+          })
+          .start();
+      });
+    }
   }
 }
 
 window.onload = function onload() {
-  const fov = 100;
+  const fov = 50;
   const zPosition = 600;
   const sceneSize = 5000;
   const gui = new dat.GUI();
@@ -557,8 +556,8 @@ window.onload = function onload() {
       camera.lookAt(0, 0, 0);
       camera.fov = fov;
       camera.updateProjectionMatrix();
-      controls.target.set(0,0,0);
-      camera.up.set(0,0,0);
+      controls.target.set(0, 0, 0);
+      controls.enabled = true;
     },
   };
 
@@ -566,7 +565,7 @@ window.onload = function onload() {
 
   gui.open();
 
-  function onDocumentMouseDown(event) {
+  function onDocumentClick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -575,20 +574,20 @@ window.onload = function onload() {
     });
   }
 
-  function onDocumentTouchEnd(event) {
-    mouse.x = +(event.targetTouches[0].pageX / window.innerWidth) * 2 +-1;
-    mouse.y = -(event.targetTouches[0].pageY / window.innerHeight) * 2 + 1;
-    requestAnimationFrame(() => {
-      solarSystemCreator.runToPlanet(raycaster, camera, controls);
-    });
-  }
+  // function onDocumentTouchEnd(event) {
+  //   mouse.x = +(event.targetTouches[0].pageX / window.innerWidth) * 2 + -1;
+  //   mouse.y = -(event.targetTouches[0].pageY / window.innerHeight) * 2 + 1;
+  //   requestAnimationFrame(() => {
+  //     solarSystemCreator.runToPlanet(raycaster, camera, controls);
+  //   });
+  // }
 
 
   function loop(time) {
     requestAnimationFrame(loop);
     raycaster.setFromCamera(mouse, camera);
     TWEEN.update(time);
-    if(controls.enabled){
+    if (controls.enabled) {
       controls.update();
     }
 
@@ -598,6 +597,6 @@ window.onload = function onload() {
 
   loop();
 
-  canvas.addEventListener('mousedown', onDocumentMouseDown, false);
-  canvas.addEventListener('touchend', onDocumentTouchEnd, false);
+  canvas.addEventListener('click', onDocumentClick, false);
+  // canvas.addEventListener('touchend', onDocumentTouchEnd, false);
 };
