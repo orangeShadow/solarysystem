@@ -140,8 +140,40 @@ const planets = {
   },
 };
 
-class SolarSystemCreator {
-  constructor(planets, config) {
+class SolarSystem {
+  constructor(canvas) {
+    this.fov = 50;
+    this.zPosition = 600;
+    this.sceneSize = 5000;
+
+    this.canvas = canvas;
+    this.width = canvas.offsetWidth * window.devicePixelRatio;
+    this.height = canvas.offsetHeight * window.devicePixelRatio;
+    canvas.width = this.width;
+    canvas.height = this.height;
+
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: this.canvas,
+      antialias: true,
+    });
+    this.renderer.setClearColor(0x000000);
+
+    this.scene = new THREE.Scene();
+
+    // Создаем камеру
+    this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, this.sceneSize);
+    this.camera.position.set(0, 0, this.zPosition);
+
+    // window.controls = controls;
+    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+
+    this.enableSkybox = true;
+
+    this.loop = this.loop.bind(this);
+
     this.config = config;
     this.planets = planets;
 
@@ -168,6 +200,79 @@ class SolarSystemCreator {
      * Объект на котором наведена камера в данный момент
      */
     this.targetObject = null;
+
+    const onDocumentClick = (event) => {
+      this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      requestAnimationFrame(() => {
+        this.runToPlanet();
+      });
+    };
+    // function onDocumentTouchEnd(event) {
+    //   mouse.x = +(event.targetTouches[0].pageX / window.innerWidth) * 2 + -1;
+    //   mouse.y = -(event.targetTouches[0].pageY / window.innerHeight) * 2 + 1;
+    //   requestAnimationFrame(() => {
+    //     solarSystemCreator.runToPlanet(raycaster, camera, controls);
+    //   });
+    // }
+    let resizeTimeout;
+    const onResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        this.width = canvas.offsetWidth * window.devicePixelRatio;
+        this.height = canvas.offsetHeight * window.devicePixelRatio;
+        canvas.width = this.width;
+        canvas.height = this.height;
+        this.camera.aspect = this.width / this.height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(this.width, this.height, false);
+      });
+    };
+    this.attachEvents = () => {
+      this.canvas.addEventListener('click', onDocumentClick, false);
+      window.addEventListener('resize', onResize, false);
+      // canvas.addEventListener('touchend', onDocumentTouchEnd, false);
+    };
+
+    this.attachEvents();
+    this.createSolarSystem();
+    this.loop();
+    this.createGui();
+  }
+
+  loop(time) {
+    requestAnimationFrame(this.loop);
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    TWEEN.update(time);
+    if (this.controls.enabled) {
+      this.controls.update();
+    }
+
+    this.animate(this.getTargetObject());
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  createGui() {
+    const self = this;
+    self.gui = new dat.GUI();
+
+    const controlsData = {
+      switchToSolarSystem() {
+        self.setTargetObject(null);
+        self.showOrbits();
+        self.camera.position.set(0, 0, self.zPosition);
+        self.camera.lookAt(0, 0, 0);
+        self.camera.fov = self.fov;
+        self.camera.updateProjectionMatrix();
+        self.controls.target.set(0, 0, 0);
+        self.controls.enabled = true;
+      },
+    };
+
+    self.gui.add(controlsData, 'switchToSolarSystem');
+
+    self.gui.open();
   }
 
   /**
@@ -176,11 +281,11 @@ class SolarSystemCreator {
      * @param scene
      * @param int sceneSize
      */
-  createSolarSystem(scene, sceneSize) {
-    if (this.enableSkybox) {
-      scene.add(this._createSkybox(sceneSize));
+  createSolarSystem() {
+    const { scene, enableSkybox } = this;
+    if (enableSkybox) {
+      scene.add(this._createSkybox());
     }
-
 
     const solarSystem = new THREE.Object3D();
     scene.add(solarSystem);
@@ -199,7 +304,7 @@ class SolarSystemCreator {
     this.solarSystem = solarSystem;
 
     if (this.enableOrbit) {
-      this._createOrbits(scene);
+      this._createOrbits();
     }
 
     if (this.enableAxios) {
@@ -274,7 +379,8 @@ class SolarSystemCreator {
      *
      * @param planet
      */
-  _createSkybox(sceneSize) {
+  _createSkybox() {
+    const { sceneSize } = this;
     const skyboxGeometry = new THREE.CubeGeometry(sceneSize, sceneSize, sceneSize);
 
     const skyboxMaterials = [
@@ -316,7 +422,8 @@ class SolarSystemCreator {
      * Create orbits for planets
      * @param scene
      */
-  _createOrbits(scene) {
+  _createOrbits() {
+    const { scene } = this;
     Object.keys(this.planets).forEach((k) => {
       if (k === 'sun') {
         return;
@@ -440,7 +547,8 @@ class SolarSystemCreator {
   /**
    * Движение в сторону планеты
    */
-  runToPlanet(raycaster, camera, controls) {
+  runToPlanet() {
+    const { raycaster, camera, controls } = this;
     const intersects = raycaster.intersectObjects(this.getMeshPlanets());
     if (intersects.length > 0) {
       intersects.forEach((obj) => {
@@ -509,94 +617,4 @@ class SolarSystemCreator {
     }
   }
 }
-
-window.onload = function onload() {
-  const fov = 50;
-  const zPosition = 600;
-  const sceneSize = 5000;
-  const gui = new dat.GUI();
-  const width = window.innerWidth * window.devicePixelRatio;
-  const height = window.innerHeight * window.devicePixelRatio;
-
-  const canvas = document.getElementById('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-  });
-  renderer.setClearColor(0x000000);
-
-  const scene = new THREE.Scene();
-
-  // Создаем камеру
-  const camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, sceneSize);
-  camera.position.set(0, 0, zPosition);
-  // TODO: remove
-  window.camera = camera;
-
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  window.controls = controls;
-
-  const solarSystemCreator = new SolarSystemCreator(planets, config);
-
-  solarSystemCreator.enableSkybox = true;
-  solarSystemCreator.createSolarSystem(scene, sceneSize);
-
-  window.solarSystemCreator = solarSystemCreator;
-
-  const controlsData = {
-    switchToSolarSystem() {
-      solarSystemCreator.setTargetObject(null);
-      solarSystemCreator.showOrbits();
-      camera.position.set(0, 0, zPosition);
-      camera.lookAt(0, 0, 0);
-      camera.fov = fov;
-      camera.updateProjectionMatrix();
-      controls.target.set(0, 0, 0);
-      controls.enabled = true;
-    },
-  };
-
-  gui.add(controlsData, 'switchToSolarSystem');
-
-  gui.open();
-
-  function onDocumentClick(event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    requestAnimationFrame(() => {
-      solarSystemCreator.runToPlanet(raycaster, camera, controls);
-    });
-  }
-
-  // function onDocumentTouchEnd(event) {
-  //   mouse.x = +(event.targetTouches[0].pageX / window.innerWidth) * 2 + -1;
-  //   mouse.y = -(event.targetTouches[0].pageY / window.innerHeight) * 2 + 1;
-  //   requestAnimationFrame(() => {
-  //     solarSystemCreator.runToPlanet(raycaster, camera, controls);
-  //   });
-  // }
-
-
-  function loop(time) {
-    requestAnimationFrame(loop);
-    raycaster.setFromCamera(mouse, camera);
-    TWEEN.update(time);
-    if (controls.enabled) {
-      controls.update();
-    }
-
-    solarSystemCreator.animate(solarSystemCreator.getTargetObject());
-    renderer.render(scene, camera);
-  }
-
-  loop();
-
-  canvas.addEventListener('click', onDocumentClick, false);
-  // canvas.addEventListener('touchend', onDocumentTouchEnd, false);
-};
+window.solarSystem = new SolarSystem(document.getElementById('canvas'));
