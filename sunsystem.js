@@ -7,10 +7,10 @@ const config = {
     return config.earthSize * ratio;
   },
   orbitRadiusCalculate(sun, radiusOffset) {
-    return config.diam(sun.diamRation) + radiusOffset;
+    return config.diam(sun.diamRatio) + radiusOffset;
   },
-  calculateSelfSpeedRoration(selfSpeedRorationRatio) {
-    return config.earthRotation * selfSpeedRorationRatio;
+  calculateSelfSpeedRotation(selfSpeedRotationRatio) {
+    return config.earthRotation * selfSpeedRotationRatio;
   },
 };
 
@@ -26,16 +26,16 @@ const planets = {
       decay: 2,
       position: new THREE.Vector3(0, 0, 0),
     },
-    diamRation: 5,
-    selfSpeedRorationRatio: 0.000124,
+    diamRatio: 5,
+    selfSpeedRotationRatio: 0.000124,
     sunOrbitRotationSpeed: 0,
   },
   mercury: {
     material: 'lambert',
     name: 'mercury',
     textureImg: './imgs/mercurymap.jpg',
-    diamRation: 0.41,
-    selfSpeedRorationRatio: 0.001,
+    diamRatio: 0.41,
+    selfSpeedRotationRatio: 0.001,
     sunOrbitRotationSpeed: 0.011,
     radiusOffset: 50,
   },
@@ -43,8 +43,8 @@ const planets = {
     material: 'lambert',
     name: 'venus',
     textureImg: './imgs/venusmap.jpg',
-    diamRation: 0.95,
-    selfSpeedRorationRatio: 0.002,
+    diamRatio: 0.95,
+    selfSpeedRotationRatio: 0.002,
     sunOrbitRotationSpeed: 0.004,
     radiusOffset: 100,
   },
@@ -54,18 +54,18 @@ const planets = {
         material: 'lambert',
         name: 'moon',
         textureImg: './imgs/moonmap1k.jpg',
-        selfSpeedRorationRatio: 1,
+        selfSpeedRotationRatio: 1,
         position: new THREE.Vector3(19, 0, 0),
         animate(item, config) {
-          item.rotation += config.calculateSelfSpeedRoration(this.selfSpeedRorationRatio);
+          item.rotation += config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
         },
       },
     },
     material: 'lambert',
     name: 'earth',
     textureImg: './imgs/earthmap1k.jpg',
-    diamRation: 0.95,
-    selfSpeedRorationRatio: 1,
+    diamRatio: 0.95,
+    selfSpeedRotationRatio: 1,
     sunOrbitRotationSpeed: 0.0029,
     radiusOffset: 150,
     animate(mesh, config) {
@@ -80,8 +80,8 @@ const planets = {
     material: 'lambert',
     name: 'mars',
     textureImg: './imgs/marsmap1k.jpg',
-    diamRation: 0.95,
-    selfSpeedRorationRatio: 0.97,
+    diamRatio: 0.95,
+    selfSpeedRotationRatio: 0.97,
     sunOrbitRotationSpeed: 0.0024,
     radiusOffset: 200,
     orbit: 0,
@@ -90,8 +90,8 @@ const planets = {
     material: 'lambert',
     name: 'jupiter',
     textureImg: './imgs/jupiter2_1k.jpg',
-    diamRation: 3,
-    selfSpeedRorationRatio: 2.4,
+    diamRatio: 3,
+    selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.0013,
     radiusOffset: 300,
   },
@@ -99,9 +99,9 @@ const planets = {
     satellites: {
       ring: {
         name: 'ring',
-        selfSpeedRorationRatio: 0,
+        selfSpeedRotationRatio: 0,
         create(planet, config) {
-          const mesh = new THREE.Mesh(new THREE.XRingGeometry(1.2 * config.diam(planet.diamRation), 2 * config.diam(planet.diamRation), 2 * 32, 5, 0, Math.PI * 2), new THREE.MeshBasicMaterial({
+          const mesh = new THREE.Mesh(new THREE.XRingGeometry(1.2 * config.diam(planet.diamRatio), 2 * config.diam(planet.diamRatio), 2 * 32, 5, 0, Math.PI * 2), new THREE.MeshBasicMaterial({
             map: THREE.ImageUtils.loadTexture('imgs/saturn-rings.png'),
             side: THREE.DoubleSide,
             transparent: true,
@@ -115,8 +115,8 @@ const planets = {
     material: 'lambert',
     name: 'saturn',
     textureImg: './imgs/saturnmap.jpg',
-    diamRation: 2.4,
-    selfSpeedRorationRatio: 2.4,
+    diamRatio: 2.4,
+    selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.00096,
     radiusOffset: 400,
   },
@@ -124,8 +124,8 @@ const planets = {
     material: 'lambert',
     name: 'uranus',
     textureImg: './imgs/uranusmap.jpg',
-    diamRation: 1.85,
-    selfSpeedRorationRatio: 1.4,
+    diamRatio: 1.85,
+    selfSpeedRotationRatio: 1.4,
     sunOrbitRotationSpeed: 0.00068,
     radiusOffset: 500,
   },
@@ -133,8 +133,8 @@ const planets = {
     material: 'lambert',
     name: 'neptune',
     textureImg: './imgs/neptunemap.jpg',
-    diamRation: 1.4,
-    selfSpeedRorationRatio: 1.7,
+    diamRatio: 1.4,
+    selfSpeedRotationRatio: 1.7,
     sunOrbitRotationSpeed: 0.00054,
     radiusOffset: 600,
   },
@@ -142,13 +142,18 @@ const planets = {
 
 class SolarSystem {
   constructor(canvas) {
+    this.config = config;
+    this.planets = planets;
+
     this.fov = 50;
-    this.zPosition = 600;
+    this.zPosition = 800;
     this.sceneSize = 5000;
 
     this.canvas = canvas;
-    this.width = canvas.offsetWidth;
-    this.height = canvas.offsetHeight;
+    this.width = canvas.offsetWidth * window.devicePixelRatio;
+    this.height = canvas.offsetHeight * window.devicePixelRatio;
+    canvas.width = this.width;
+    canvas.height = this.height;
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
@@ -158,8 +163,6 @@ class SolarSystem {
       antialias: true,
     });
     this.renderer.setClearColor(0x000000);
-    this.renderer.setSize(this.width, this.height);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
 
     this.scene = new THREE.Scene();
 
@@ -167,15 +170,19 @@ class SolarSystem {
     this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, this.sceneSize);
     this.camera.position.set(0, 0, this.zPosition);
 
-    // window.controls = controls;
     this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.minDistance = this.config.diam(planets.sun.diamRatio) * 4;
+    this.controls.maxDistance = this.sceneSize / 3;
+    this.controls.rotateUp(Math.PI / 6);
+
+    this.overviewState = null;
+    requestAnimationFrame(() => {
+      this.saveOverviewState();
+    });
 
     this.enableSkybox = true;
 
     this.loop = this.loop.bind(this);
-
-    this.config = config;
-    this.planets = planets;
 
     this.meshPlanets = [];
     this.meshOrbits = [];
@@ -192,7 +199,7 @@ class SolarSystem {
 
     this.enableSkybox = true;
     this.enableOrbit = true;
-    this.enableAxios = true;
+    this.enableAxios = false;
     this.enableSunOrbitAnimate = true;
     this.enableSelfOrbitAnimate = true;
 
@@ -206,16 +213,20 @@ class SolarSystem {
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       requestAnimationFrame(() => {
-        this.runToPlanet();
+        const intersects = this.raycaster.intersectObjects(this.getMeshPlanets());
+        if (intersects.length > 0) {
+          let intersectsCurrent;
+          intersects.forEach((obj) => {
+            if (intersectsCurrent) return;
+            if (obj.object === this.targetObject) {
+              intersectsCurrent = true;
+              return;
+            }
+            this.runToPlanet(obj.object.name);
+          });
+        }
       });
     };
-    // function onDocumentTouchEnd(event) {
-    //   mouse.x = +(event.targetTouches[0].pageX / window.innerWidth) * 2 + -1;
-    //   mouse.y = -(event.targetTouches[0].pageY / window.innerHeight) * 2 + 1;
-    //   requestAnimationFrame(() => {
-    //     solarSystemCreator.runToPlanet(raycaster, camera, controls);
-    //   });
-    // }
     let resizeTimeout;
     const onResize = () => {
       clearTimeout(resizeTimeout);
@@ -232,7 +243,6 @@ class SolarSystem {
     this.attachEvents = () => {
       this.canvas.addEventListener('click', onDocumentClick, false);
       window.addEventListener('resize', onResize, false);
-      // canvas.addEventListener('touchend', onDocumentTouchEnd, false);
     };
 
     this.attachEvents();
@@ -245,7 +255,8 @@ class SolarSystem {
     requestAnimationFrame(this.loop);
     this.raycaster.setFromCamera(this.mouse, this.camera);
     TWEEN.update(time);
-    this.animate(this.getTargetObject());
+    this.controls.update();
+    this.animate();
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -255,19 +266,11 @@ class SolarSystem {
 
     const controlsData = {
       switchToSolarSystem() {
-        self.setTargetObject(null);
-        self.showOrbits();
-        self.camera.position.set(0, 0, self.zPosition);
-        self.camera.lookAt(0, 0, 0);
-        self.camera.fov = self.fov;
-        self.camera.updateProjectionMatrix();
-        self.controls.target.set(0, 0, 0);
-        self.controls.enabled = true;
+        self.runToOverview();
       },
     };
 
     self.gui.add(controlsData, 'switchToSolarSystem');
-
     self.gui.open();
   }
 
@@ -326,7 +329,7 @@ class SolarSystem {
       texture = new THREE.TextureLoader().load(planet.textureImg);
     }
 
-    const geometry = new THREE.SphereGeometry(this.config.diam(planet.diamRation), 64, 64);
+    const geometry = new THREE.SphereGeometry(this.config.diam(planet.diamRatio), 64, 64);
 
     if (planet.material === 'basic') {
       material = new THREE.MeshBasicMaterial({
@@ -425,9 +428,9 @@ class SolarSystem {
         return;
       }
       const planet = this.planets[k];
-      const geometry = new THREE.CircleGeometry(this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset), 128);
+      const geometry = new THREE.CircleGeometry(this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset), 128 * 2);
       const edges = new THREE.EdgesGeometry(geometry);
-      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.1 }));
+      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.3, transparent: true }));
       line.rotation.x = Math.PI / 2;
       this.meshOrbits.push(line);
       scene.add(line);
@@ -478,13 +481,14 @@ class SolarSystem {
    *
    * @param {*} stopPlanet
    */
-  animate(stopPlanet = null) {
+  animate() {
     this.getMeshPlanets().forEach((item) => {
       if (item.name === 'sun') {
         return;
       }
 
       const planet = planets[item.name];
+      const stopPlanet = this.targetObject;
 
       if (this.enableSunOrbitAnimate && (!stopPlanet || (stopPlanet && item.name !== stopPlanet.name))) {
         this.runBySunOrbit(planet, item);
@@ -515,7 +519,7 @@ class SolarSystem {
    * Движение планет вокруг своей оси
    */
   runBySelfOrbit(planet, mesh) {
-    mesh.rotation.y += this.config.calculateSelfSpeedRoration(planet.selfSpeedRorationRatio);
+    mesh.rotation.y += this.config.calculateSelfSpeedRotation(planet.selfSpeedRotationRatio);
   }
 
   /**
@@ -540,85 +544,128 @@ class SolarSystem {
     return this.targetObject;
   }
 
+  saveOverviewState() {
+    this.overviewState = {
+      cameraPosition: { ...this.camera.position },
+      controlsTarget: { ...this.controls.target },
+    };
+  }
+
+  runToOverview() {
+    if (!this.overviewState) return;
+    const { controls, camera } = this;
+    this.setTargetObject(null);
+    this.showOrbits();
+
+    const currentCameraPosition = { ...camera.position };
+    const newCameraPosition = { ...this.overviewState.cameraPosition };
+
+    const currentControlsTarget = { ...controls.target };
+    const newControlsTarget = { ...this.overviewState.controlsTarget };
+
+    controls.enableZoom = false;
+    controls.enablePan = false;
+    controls.enableRotate = false;
+    controls.enableKeys = false;
+    controls.minDistance = 0;
+    controls.maxDistance = Infinity;
+
+    new TWEEN.Tween(currentControlsTarget)
+      .to(newControlsTarget, 2000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        const { x, y, z } = currentControlsTarget;
+        Object.assign(controls.target, { x, y, z });
+      })
+      .onComplete(() => {
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.enableRotate = true;
+        controls.enableKeys = true;
+        controls.minDistance = this.config.diam(planets.sun.diamRatio) * 4;
+        controls.maxDistance = this.sceneSize / 3;
+      })
+      .start();
+
+    new TWEEN.Tween(currentCameraPosition)
+      .to(newCameraPosition, 2000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        const { x, y, z } = currentCameraPosition;
+        Object.assign(camera.position, { x, y, z });
+      })
+      .start();
+  }
+
   /**
    * Движение в сторону планеты
    */
-  runToPlanet() {
-    const { raycaster, camera, controls } = this;
-    const intersects = raycaster.intersectObjects(this.getMeshPlanets());
-    if (intersects.length > 0) {
-      intersects.forEach((obj) => {
-        if (obj.object.name === 'sun') {
-          return;
-        }
-        const targetObject = obj.object;
-        this.setTargetObject(targetObject);
-        this.hideOrbits();
-
-        const planet = this.planets[targetObject.name];
-        const orbitPosition = this.getPlanetPositionByName(planet.name);
-        const newPositionX = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
-        const newPositionY = 0;
-        const newPositionZ = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
-
-        // orbitPosition %= (2 * Math.PI);
-        // let rotateY = orbitPosition <= Math.PI ?  orbitPosition - Math.PI / 2: 2*Math.PI/2 - Math.PI/2 -orbitPosition;
-
-        const currentTarget = {
-          x: camera.position.x,
-          y: camera.position.y,
-          z: camera.position.z,
-          // rX: camera.rotation.x,
-          // rY: camera.rotation.y,
-          // rZ: camera.rotation.z,
-        };
-        const newPositon = {
-          x: newPositionX,
-          y: newPositionY,
-          z: newPositionZ,
-          // rX: 0,
-          // rY: -Math.PI / 2 - orbitPosition,
-          // rZ: 0,
-        };
-
-        controls.enableZoom = false;
-        controls.enablePan = false;
-        controls.enableRotate = false;
-        controls.enableKeys = false;
-
-        const currentControlsTarget = { ...controls.target };
-        const newControlsTarget = { ...targetObject.position };
-
-        new TWEEN.Tween(currentControlsTarget)
-          .to(newControlsTarget, 2000)
-          .easing(TWEEN.Easing.Quadratic.InOut)
-          .onUpdate(() => {
-            const { x, y, z } = currentControlsTarget;
-            Object.assign(controls.target, { x, y, z });
-          })
-          .onComplete(() => {
-            controls.enableZoom = true;
-            controls.enablePan = true;
-            controls.enableRotate = true;
-            controls.enableKeys = true;
-          })
-          .start();
-
-        new TWEEN.Tween(currentTarget)
-          .to(newPositon, 2000)
-          .easing(TWEEN.Easing.Quadratic.InOut)
-          .onUpdate(() => {
-            camera.position.x = currentTarget.x;
-            camera.position.y = currentTarget.y;
-            camera.position.z = currentTarget.z;
-            // camera.rotation.x = currentTarget.rX;
-            // camera.rotation.y = currentTarget.rY;
-            // camera.rotation.z = currentTarget.rZ;
-            controls.update();
-          })
-          .start();
-      });
+  runToPlanet(objectName) {
+    const { camera, controls } = this;
+    const targetObject = this.getMeshPlanets().filter(obj => obj.name === objectName)[0];
+    if (!targetObject || targetObject === this.targetObject) return;
+    if (!this.targetObject) {
+      // Save overview state
+      this.saveOverviewState();
     }
+
+    this.setTargetObject(targetObject);
+    this.hideOrbits();
+
+    const planet = this.planets[targetObject.name];
+
+    const orbitPosition = this.getPlanetPositionByName(planet.name);
+    const newPositionX = config.orbitRadiusCalculate(this.planets.sun, (planet.radiusOffset || 0) - this.config.diam(planet.diamRatio) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
+    const newPositionY = 0;
+    const newPositionZ = config.orbitRadiusCalculate(this.planets.sun, (planet.radiusOffset || 0) - this.config.diam(planet.diamRatio) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
+
+    const currentTarget = {
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z,
+    };
+    const newPositon = {
+      x: newPositionX,
+      y: newPositionY,
+      z: newPositionZ,
+    };
+
+    controls.enableZoom = false;
+    controls.enablePan = false;
+    controls.enableRotate = false;
+    controls.enableKeys = false;
+    controls.minDistance = 0;
+    controls.maxDistance = Infinity;
+
+    const currentControlsTarget = { ...controls.target };
+    const newControlsTarget = { ...targetObject.position };
+
+    new TWEEN.Tween(currentControlsTarget)
+      .to(newControlsTarget, 2000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        const { x, y, z } = currentControlsTarget;
+        Object.assign(controls.target, { x, y, z });
+      })
+      .onComplete(() => {
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.enableRotate = true;
+        controls.enableKeys = true;
+        controls.minDistance = this.config.diam(planet.diamRatio) * 2;
+        controls.maxDistance = this.config.diam(planet.diamRatio) * 5;
+      })
+      .start();
+
+    new TWEEN.Tween(currentTarget)
+      .to(newPositon, 2000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        camera.position.x = currentTarget.x;
+        camera.position.y = currentTarget.y;
+        camera.position.z = currentTarget.z;
+      })
+      .start();
   }
 }
 window.solarSystem = new SolarSystem(document.getElementById('canvas'));
