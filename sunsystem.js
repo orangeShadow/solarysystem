@@ -19,7 +19,7 @@ const planets = {
   sun: {
     material: 'basic',
     name: 'sun',
-    textureImg: './imgs/sunmap.jpg',
+    textureImg: './textures/planets/8k_sun.jpg',
     light: {
       color: 0xffffff,
       intensity: 2,
@@ -34,7 +34,7 @@ const planets = {
   mercury: {
     material: 'lambert',
     name: 'mercury',
-    textureImg: './imgs/mercurymap.jpg',
+    textureImg: './textures/planets/8k_mercury.jpg',
     diamRatio: 0.41,
     selfSpeedRotationRatio: 0.001,
     sunOrbitRotationSpeed: 0.011,
@@ -43,7 +43,7 @@ const planets = {
   venus: {
     material: 'lambert',
     name: 'venus',
-    textureImg: './imgs/venusmap.jpg',
+    textureImg: './textures/planets/8k_venus_surface.jpg',
     diamRatio: 0.95,
     selfSpeedRotationRatio: 0.002,
     sunOrbitRotationSpeed: 0.004,
@@ -54,7 +54,7 @@ const planets = {
       moon: {
         material: 'lambert',
         name: 'moon',
-        textureImg: './imgs/moonmap1k.jpg',
+        textureImg: './textures/planets/2k_moon.jpg',
         selfSpeedRotationRatio: 1,
         position: new THREE.Vector3(19, 0, 0),
         animate(item, config) {
@@ -80,7 +80,7 @@ const planets = {
   mars: {
     material: 'lambert',
     name: 'mars',
-    textureImg: './imgs/marsmap1k.jpg',
+    textureImg: './textures/planets/8k_mars.jpg',
     diamRatio: 0.95,
     selfSpeedRotationRatio: 0.97,
     sunOrbitRotationSpeed: 0.0024,
@@ -90,7 +90,7 @@ const planets = {
   jupiter: {
     material: 'lambert',
     name: 'jupiter',
-    textureImg: './imgs/jupiter2_1k.jpg',
+    textureImg: './textures/planets/8k_jupiter.jpg',
     diamRatio: 3,
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.0013,
@@ -115,7 +115,7 @@ const planets = {
     },
     material: 'lambert',
     name: 'saturn',
-    textureImg: './imgs/saturnmap.jpg',
+    textureImg: './textures/planets/8k_saturn.jpg',
     diamRatio: 2.4,
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.00096,
@@ -124,7 +124,7 @@ const planets = {
   uranus: {
     material: 'lambert',
     name: 'uranus',
-    textureImg: './imgs/uranusmap.jpg',
+    textureImg: './textures/planets/2k_uranus.jpg',
     diamRatio: 1.85,
     selfSpeedRotationRatio: 1.4,
     sunOrbitRotationSpeed: 0.00068,
@@ -133,7 +133,7 @@ const planets = {
   neptune: {
     material: 'lambert',
     name: 'neptune',
-    textureImg: './imgs/neptunemap.jpg',
+    textureImg: './textures/planets/2k_neptune.jpg',
     diamRatio: 1.4,
     selfSpeedRotationRatio: 1.7,
     sunOrbitRotationSpeed: 0.00054,
@@ -143,7 +143,6 @@ const planets = {
 
 class SolarSystem {
   constructor(canvas) {
-
     this.config = config;
     this.planets = planets;
 
@@ -201,7 +200,7 @@ class SolarSystem {
 
     this._setDefaultOrbitPosition();
 
-    const onDocumentTouchEnd = (event) =>{
+    const onDocumentTouchEnd = (event) => {
       this.mouse.x = +(event.changedTouches[0].pageX / window.innerWidth) * 2 + -1;
       this.mouse.y = -(event.changedTouches[0].pageY / window.innerHeight) * 2 + 1;
 
@@ -219,7 +218,7 @@ class SolarSystem {
           });
         }
       });
-    }
+    };
 
     const onDocumentClick = (event) => {
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -337,7 +336,7 @@ class SolarSystem {
     this.planetOrbitPosition = {};
     Object.values(this.planets).forEach((item) => {
       console.log(item.sunOrbitRotationSpeed);
-      this.planetOrbitPosition[item.name] = (item.sunOrbitRotationSpeed*365*24*60)%(Math.PI*2);
+      this.planetOrbitPosition[item.name] = (item.sunOrbitRotationSpeed * 365 * 24 * 60) % (Math.PI * 2);
     });
   }
 
