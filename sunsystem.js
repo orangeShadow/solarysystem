@@ -94,7 +94,7 @@ const planets = {
     diamRatio: 3,
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.0013,
-    radiusOffset: 300,
+    radiusOffset: 500,
   },
   saturn: {
     satellites: {
@@ -119,7 +119,7 @@ const planets = {
     diamRatio: 2.4,
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.00096,
-    radiusOffset: 400,
+    radiusOffset: 800,
   },
   uranus: {
     material: 'lambert',
@@ -128,7 +128,7 @@ const planets = {
     diamRatio: 1.85,
     selfSpeedRotationRatio: 1.4,
     sunOrbitRotationSpeed: 0.00068,
-    radiusOffset: 500,
+    radiusOffset: 1000,
   },
   neptune: {
     material: 'lambert',
@@ -137,18 +137,34 @@ const planets = {
     diamRatio: 1.4,
     selfSpeedRotationRatio: 1.7,
     sunOrbitRotationSpeed: 0.00054,
-    radiusOffset: 600,
+    radiusOffset: 1200,
   },
 };
 
 class SolarSystem {
   constructor(canvas) {
+
     this.config = config;
     this.planets = planets;
 
     this.fov = 50;
     this.zPosition = 800;
     this.sceneSize = 5000;
+
+    this.enableSkybox = true;
+    this.enableSkybox = true;
+    this.enableOrbit = true;
+    this.enableAxios = false;
+    this.enableSunOrbitAnimate = true;
+    this.enableSelfOrbitAnimate = true;
+
+    this.meshPlanets = [];
+    this.meshOrbits = [];
+
+    /**
+     * Объект на котором наведена камера в данный момент
+     */
+    this.targetObject = null;
 
     this.canvas = canvas;
     this.width = canvas.offsetWidth * window.devicePixelRatio;
@@ -181,33 +197,29 @@ class SolarSystem {
       this.saveOverviewState();
     });
 
-    this.enableSkybox = true;
-
     this.loop = this.loop.bind(this);
 
-    this.meshPlanets = [];
-    this.meshOrbits = [];
+    this._setDefaultOrbitPosition();
 
-    /**
-     * Текущее положение планет на солнечной орбите
-     */
-    this.planetOrbitPosition = {};
-    Object.values(this.planets).forEach((item) => {
-      this.planetOrbitPosition[item.name] = 0;
-    });
+    const onDocumentTouchEnd = (event) =>{
+      this.mouse.x = +(event.changedTouches[0].pageX / window.innerWidth) * 2 + -1;
+      this.mouse.y = -(event.changedTouches[0].pageY / window.innerHeight) * 2 + 1;
 
-    this.planetOrbitPosition.venus = 3 * Math.PI / 2;
-
-    this.enableSkybox = true;
-    this.enableOrbit = true;
-    this.enableAxios = false;
-    this.enableSunOrbitAnimate = true;
-    this.enableSelfOrbitAnimate = true;
-
-    /**
-     * Объект на котором наведена камера в данный момент
-     */
-    this.targetObject = null;
+      requestAnimationFrame(() => {
+        const intersects = this.raycaster.intersectObjects(this.getMeshPlanets());
+        if (intersects.length > 0) {
+          let intersectsCurrent;
+          intersects.forEach((obj) => {
+            if (intersectsCurrent) return;
+            if (obj.object === this.targetObject) {
+              intersectsCurrent = true;
+              return;
+            }
+            this.runToPlanet(obj.object.name);
+          });
+        }
+      });
+    }
 
     const onDocumentClick = (event) => {
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -228,6 +240,7 @@ class SolarSystem {
         }
       });
     };
+
     let resizeTimeout;
     const onResize = () => {
       clearTimeout(resizeTimeout);
@@ -241,8 +254,10 @@ class SolarSystem {
         this.renderer.setSize(this.width, this.height, false);
       });
     };
+
     this.attachEvents = () => {
       this.canvas.addEventListener('click', onDocumentClick, false);
+      this.canvas.addEventListener('touchend', onDocumentTouchEnd, false);
       window.addEventListener('resize', onResize, false);
     };
 
@@ -312,6 +327,18 @@ class SolarSystem {
     }
 
     return this.solarSystem;
+  }
+
+  /**
+   * Установка начальных позиций для планет
+   *
+   */
+  _setDefaultOrbitPosition() {
+    this.planetOrbitPosition = {};
+    Object.values(this.planets).forEach((item) => {
+      console.log(item.sunOrbitRotationSpeed);
+      this.planetOrbitPosition[item.name] = (item.sunOrbitRotationSpeed*365*24*60)%(Math.PI*2);
+    });
   }
 
   /**
