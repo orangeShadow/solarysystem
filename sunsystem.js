@@ -432,7 +432,7 @@ class SolarSystem {
       const geometry = new THREE.CircleGeometry(this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset), 128);
       const edges = new THREE.EdgesGeometry(geometry);
       const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.1 }));
-      line.rotation.x = Math.PI/2;
+      line.rotation.x = Math.PI / 2;
       this.meshOrbits.push(line);
       scene.add(line);
     });
@@ -560,33 +560,53 @@ class SolarSystem {
         this.hideOrbits();
 
         const planet = this.planets[targetObject.name];
-        let orbitPosition = this.getPlanetPositionByName(planet.name);
+        const orbitPosition = this.getPlanetPositionByName(planet.name);
         const newPositionX = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
         const newPositionY = 0;
         const newPositionZ = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
 
-
-
-        orbitPosition %= (2 * Math.PI);
-        //let rotateY = orbitPosition <= Math.PI ?  orbitPosition - Math.PI / 2: 2*Math.PI/2 - Math.PI/2 -orbitPosition;
+        // orbitPosition %= (2 * Math.PI);
+        // let rotateY = orbitPosition <= Math.PI ?  orbitPosition - Math.PI / 2: 2*Math.PI/2 - Math.PI/2 -orbitPosition;
 
         const currentTarget = {
           x: camera.position.x,
           y: camera.position.y,
           z: camera.position.z,
-          rX: camera.rotation.x,
-          rY: camera.rotation.y,
-          rZ: camera.rotation.z,
+          // rX: camera.rotation.x,
+          // rY: camera.rotation.y,
+          // rZ: camera.rotation.z,
         };
         const newPositon = {
           x: newPositionX,
           y: newPositionY,
           z: newPositionZ,
-          rX: 0,
-          rY: -Math.PI/2 - orbitPosition,
-          rZ: 0
+          // rX: 0,
+          // rY: -Math.PI / 2 - orbitPosition,
+          // rZ: 0,
         };
-        controls.enabled = false;
+
+        controls.enableZoom = false;
+        controls.enablePan = false;
+        controls.enableRotate = false;
+        controls.enableKeys = false;
+
+        const currentControlsTarget = { ...controls.target };
+        const newControlsTarget = { ...targetObject.position };
+
+        new TWEEN.Tween(currentControlsTarget)
+          .to(newControlsTarget, 2000)
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .onUpdate(() => {
+            const { x, y, z } = currentControlsTarget;
+            Object.assign(controls.target, { x, y, z });
+          })
+          .onComplete(() => {
+            controls.enableZoom = true;
+            controls.enablePan = true;
+            controls.enableRotate = true;
+            controls.enableKeys = true;
+          })
+          .start();
 
         new TWEEN.Tween(currentTarget)
           .to(newPositon, 2000)
@@ -595,13 +615,9 @@ class SolarSystem {
             camera.position.x = currentTarget.x;
             camera.position.y = currentTarget.y;
             camera.position.z = currentTarget.z;
-            camera.rotation.x = currentTarget.rX;
-            camera.rotation.y = currentTarget.rY;
-            camera.rotation.z = currentTarget.rZ;
-          })
-          .onComplete(() => {
-            controls.target.set(targetObject.position.x, targetObject.position.y, targetObject.position.z);
-            // controls.enabled = true;
+            // camera.rotation.x = currentTarget.rX;
+            // camera.rotation.y = currentTarget.rY;
+            // camera.rotation.z = currentTarget.rZ;
           })
           .start();
       });
