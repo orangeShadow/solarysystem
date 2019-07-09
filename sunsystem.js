@@ -147,10 +147,8 @@ class SolarSystem {
     this.sceneSize = 5000;
 
     this.canvas = canvas;
-    this.width = canvas.offsetWidth * window.devicePixelRatio;
-    this.height = canvas.offsetHeight * window.devicePixelRatio;
-    canvas.width = this.width;
-    canvas.height = this.height;
+    this.width = canvas.offsetWidth;
+    this.height = canvas.offsetHeight;
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
@@ -160,6 +158,8 @@ class SolarSystem {
       antialias: true,
     });
     this.renderer.setClearColor(0x000000);
+    this.renderer.setSize(this.width, this.height);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
 
     this.scene = new THREE.Scene();
 
@@ -192,7 +192,7 @@ class SolarSystem {
 
     this.enableSkybox = true;
     this.enableOrbit = true;
-    this.enableAxios = false;
+    this.enableAxios = true;
     this.enableSunOrbitAnimate = true;
     this.enableSelfOrbitAnimate = true;
 
@@ -366,10 +366,10 @@ class SolarSystem {
 
     if (planet.radius) {
       mesh.position.x = planet.radius;
-      mesh.position.y = planet.radius;
+      mesh.position.z = planet.radius;
     }
 
-    mesh.rotation.x = Math.PI / 2;
+    mesh.rotation.y = Math.PI / 2;
 
     return mesh;
   }
@@ -432,6 +432,7 @@ class SolarSystem {
       const geometry = new THREE.CircleGeometry(this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset), 128);
       const edges = new THREE.EdgesGeometry(geometry);
       const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.1 }));
+      line.rotation.x = Math.PI/2;
       this.meshOrbits.push(line);
       scene.add(line);
     });
@@ -510,7 +511,7 @@ class SolarSystem {
    */
   runBySunOrbit(planet, mesh) {
     mesh.position.x = this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset) * Math.cos(this.getPlanetPositionByName(planet.name));
-    mesh.position.y = this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset) * Math.sin(this.getPlanetPositionByName(planet.name));
+    mesh.position.z = this.config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset) * Math.sin(this.getPlanetPositionByName(planet.name));
     this.planetOrbitPosition[planet.name] += planet.sunOrbitRotationSpeed;
   }
 
@@ -518,7 +519,6 @@ class SolarSystem {
    * Движение планет вокруг своей оси
    */
   runBySelfOrbit(planet, mesh) {
-    // console.log(mesh.name, mesh.rotation.y);
     mesh.rotation.y += this.config.calculateSelfSpeedRoration(planet.selfSpeedRorationRatio);
   }
 
@@ -562,22 +562,13 @@ class SolarSystem {
         const planet = this.planets[targetObject.name];
         let orbitPosition = this.getPlanetPositionByName(planet.name);
         const newPositionX = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.cos(orbitPosition + planet.sunOrbitRotationSpeed);
-        const newPositionY = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
-        const newPositionZ = 0;
+        const newPositionY = 0;
+        const newPositionZ = config.orbitRadiusCalculate(this.planets.sun, planet.radiusOffset - this.config.diam(planet.diamRation) * 3) * Math.sin(orbitPosition + planet.sunOrbitRotationSpeed);
+
 
 
         orbitPosition %= (2 * Math.PI);
-        /*
-        TODO: Нам это надо?
-        let rotationAngel = 0;
-        if (orbitPosition < Math.PI / 4 && orbitPosition > 0) {
-          rotationAngel = -orbitPosition - Math.PI / 2;
-        } else if (orbitPosition > Math.PI / 4 && orbitPosition < Math.PI / 2) {
-          rotationAngel = -orbitPosition;
-        } else if (orbitPosition > Math.PI / 2) {
-          rotationAngel = orbitPosition - Math.PI / 2;
-        }
-        */
+        //let rotateY = orbitPosition <= Math.PI ?  orbitPosition - Math.PI / 2: 2*Math.PI/2 - Math.PI/2 -orbitPosition;
 
         const currentTarget = {
           x: camera.position.x,
@@ -591,9 +582,9 @@ class SolarSystem {
           x: newPositionX,
           y: newPositionY,
           z: newPositionZ,
-          rX: Math.PI / 2,
-          rY: orbitPosition - Math.PI / 2,
-          rZ: 0,
+          rX: 0,
+          rY: -Math.PI/2 - orbitPosition,
+          rZ: 0
         };
         controls.enabled = false;
 
