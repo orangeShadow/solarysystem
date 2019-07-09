@@ -1,5 +1,6 @@
 /* jshint esversion: 6 */
 /* eslint "no-param-reassign": "off" */
+const textureLoader = new THREE.TextureLoader();
 const config = {
   earthSize: 12,
   earthRotation: 0.005,
@@ -326,7 +327,7 @@ class SolarSystem {
       const video = document.getElementById(planet.textureVideo);
       texture = new THREE.VideoTexture(video);
     } else {
-      texture = new THREE.TextureLoader().load(planet.textureImg);
+      texture = textureLoader.load(planet.textureImg);
     }
 
     const geometry = new THREE.SphereGeometry(this.config.diam(planet.diamRatio), 64, 64);
