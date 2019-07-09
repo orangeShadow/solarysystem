@@ -245,10 +245,6 @@ class SolarSystem {
     requestAnimationFrame(this.loop);
     this.raycaster.setFromCamera(this.mouse, this.camera);
     TWEEN.update(time);
-    if (this.controls.enabled) {
-      this.controls.update();
-    }
-
     this.animate(this.getTargetObject());
     this.renderer.render(this.scene, this.camera);
   }
@@ -618,6 +614,7 @@ class SolarSystem {
             // camera.rotation.x = currentTarget.rX;
             // camera.rotation.y = currentTarget.rY;
             // camera.rotation.z = currentTarget.rZ;
+            controls.update();
           })
           .start();
       });
