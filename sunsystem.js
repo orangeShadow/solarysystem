@@ -182,8 +182,13 @@ class SolarSystem {
 
     this.scene = new THREE.Scene();
 
+    this.spotLight = new THREE.SpotLight(0xffffff);
+    this.spotLight.visible = false;
+    this.scene.add(this.spotLight);
+
     // Создаем камеру
     this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, this.sceneSize);
+    window.camera = this.camera;
     this.camera.position.set(0, 0, this.zPosition);
 
     this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
@@ -268,6 +273,11 @@ class SolarSystem {
   }
 
   loop(time) {
+
+    if(this.spotLight && this.spotLight.visible && this.targetObject) {
+      this.spotLight.position.copy(this.camera.position);
+    }
+
     requestAnimationFrame(this.loop);
     this.raycaster.setFromCamera(this.mouse, this.camera);
     TWEEN.update(time);
@@ -505,6 +515,21 @@ class SolarSystem {
     });
   }
 
+  switchOffSunLight() {
+    const sun = this.getMeshPlanets().filter(obj => obj.name === 'sun')[0];
+    const pointLight = sun.children.filter( item => item.type === "PointLight")[0];
+    pointLight.visible = false;
+    this.spotLight.target = this.targetObject;
+    this.spotLight.visible = true;
+  }
+
+  switchOnSunLight() {
+    const sun = this.getMeshPlanets().filter(obj => obj.name === 'sun')[0];
+    const pointLight = sun.children.filter( item => item.type === "PointLight")[0];
+    pointLight.visible = true;
+    this.spotLight.visible = false;
+  }
+
   /**
      * Show Axe for planet
      * X - red
@@ -612,6 +637,7 @@ class SolarSystem {
     const { controls, camera } = this;
     this.setTargetObject(null);
     this.showOrbits();
+    this.switchOnSunLight();
 
     const currentCameraPosition = { ...camera.position };
     const newCameraPosition = { ...this.overviewState.cameraPosition };
@@ -665,8 +691,10 @@ class SolarSystem {
       this.saveOverviewState();
     }
 
+
     this.setTargetObject(targetObject);
     this.hideOrbits();
+    this.switchOffSunLight();
 
     const planet = this.planets[targetObject.name];
 
