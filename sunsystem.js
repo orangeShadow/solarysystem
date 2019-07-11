@@ -23,7 +23,7 @@ const planets = {
     light: {
       color: 0xffffff,
       intensity: 2,
-      distance: 1000,
+      distance: 3000,
       decay: 2,
       position: new THREE.Vector3(0, 0, 0),
     },
