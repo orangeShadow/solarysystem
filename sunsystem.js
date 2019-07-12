@@ -5,9 +5,12 @@ import { Lensflare, LensflareElement } from './node_modules/three/examples/jsm/o
 import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
 import TWEEN from './vendor/tween.js';
 import XRringGeometry from './vendor/xRingGeomerty.js';
+import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import dat from './node_modules/dat.gui/build/dat.gui.module.js';
 
 const textureLoader = new THREE.TextureLoader();
+const modelLoader = new GLTFLoader();
+
 const config = {
   earthSize: 12,
   earthRotation: 0.005,
@@ -66,6 +69,47 @@ const planets = {
         position: new THREE.Vector3(19, 0, 0),
         animate(item, config) {
           item.rotation.y += config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
+        },
+      },
+      nasa: {
+        create(planet, config, mesh) {
+          modelLoader.load('./models/near_satellite/scene.gltf', (sat) => {
+            const nasa = sat.scene;
+            const radius = config.radius(planet.sizeRatio) + 2;
+            const angle = Math.PI / 6 * 2;
+            nasa.position.x = -radius * Math.sin(angle);
+            nasa.position.y = radius * Math.cos(angle);
+            nasa.rotation.z = angle;
+            nasa.scale.set(0.4, 0.4, 0.4);
+            nasa.name = 'nasa';
+            mesh.add(nasa);
+          });
+          return false;
+        },
+        animate(item) {
+          item.children[0].rotation.z += 0.01;
+        },
+      },
+      shuttle: {
+        create(planet, config, mesh) {
+          modelLoader.load('./models/shuttle/scene.gltf', (sat) => {
+            const shuttle = sat.scene;
+            const radius = config.radius(planet.sizeRatio) + 1;
+            const angle = -Math.PI / 2;
+            shuttle.children[0].position.x = -radius * Math.sin(angle);
+            shuttle.children[0].position.y = radius * Math.cos(angle);
+            shuttle.children[0].rotation.z = angle;
+            shuttle.children[0].rotation.x = 0;
+            shuttle.children[0].scale.set(0.0015, 0.0015, 0.0015);
+            shuttle.name = 'shuttle';
+            shuttle.children[0].children[0].rotation.x = Math.PI / 2;
+            shuttle.children[0].children[0].rotation.y = Math.PI;
+            mesh.add(shuttle);
+          });
+          return false;
+        },
+        animate(item) {
+          item.rotation.y -= 0.02;
         },
       },
     },
@@ -440,9 +484,9 @@ class SolarSystem {
         if (!sattelite.create) {
           satteliteMesh = this._createPlanetMesh(sattelite);
         } else {
-          satteliteMesh = sattelite.create(planet, this.config);
+          satteliteMesh = sattelite.create(planet, this.config, mesh);
         }
-
+        if (!satteliteMesh) return;
         mesh.add(satteliteMesh);
       });
     }
