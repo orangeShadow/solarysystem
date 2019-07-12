@@ -183,7 +183,7 @@ class SolarSystem {
     this.scene = new THREE.Scene();
 
     this.ambientLight = new THREE.AmbientLight(0xffffff);
-    this.ambientLight.intensity = 0.2;
+    this.ambientLight.intensity = 0.18;
     this.ambientLight.visible = true;
     this.scene.add(this.ambientLight);
 
