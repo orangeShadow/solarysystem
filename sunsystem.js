@@ -22,7 +22,7 @@ const planets = {
     textureImg: './textures/planets/8k_sun.jpg',
     light: {
       color: 0xffffff,
-      intensity: 2,
+      intensity: 1.8,
       distance: 3000,
       decay: 2,
       position: new THREE.Vector3(0, 0, 0),
@@ -182,9 +182,10 @@ class SolarSystem {
 
     this.scene = new THREE.Scene();
 
-    this.spotLight = new THREE.SpotLight(0xffffff);
-    this.spotLight.visible = false;
-    this.scene.add(this.spotLight);
+    this.ambientLight = new THREE.AmbientLight(0xffffff);
+    this.ambientLight.intensity = 0.2;
+    this.ambientLight.visible = true;
+    this.scene.add(this.ambientLight);
 
     // Создаем камеру
     this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, this.sceneSize);
@@ -273,11 +274,6 @@ class SolarSystem {
   }
 
   loop(time) {
-
-    if(this.spotLight && this.spotLight.visible && this.targetObject) {
-      this.spotLight.position.copy(this.camera.position);
-    }
-
     requestAnimationFrame(this.loop);
     this.raycaster.setFromCamera(this.mouse, this.camera);
     TWEEN.update(time);
@@ -515,21 +511,6 @@ class SolarSystem {
     });
   }
 
-  switchOffSunLight() {
-    const sun = this.getMeshPlanets().filter(obj => obj.name === 'sun')[0];
-    const pointLight = sun.children.filter( item => item.type === "PointLight")[0];
-    pointLight.visible = false;
-    this.spotLight.target = this.targetObject;
-    this.spotLight.visible = true;
-  }
-
-  switchOnSunLight() {
-    const sun = this.getMeshPlanets().filter(obj => obj.name === 'sun')[0];
-    const pointLight = sun.children.filter( item => item.type === "PointLight")[0];
-    pointLight.visible = true;
-    this.spotLight.visible = false;
-  }
-
   /**
      * Show Axe for planet
      * X - red
@@ -637,7 +618,6 @@ class SolarSystem {
     const { controls, camera } = this;
     this.setTargetObject(null);
     this.showOrbits();
-    this.switchOnSunLight();
 
     const currentCameraPosition = { ...camera.position };
     const newCameraPosition = { ...this.overviewState.cameraPosition };
@@ -694,7 +674,6 @@ class SolarSystem {
 
     this.setTargetObject(targetObject);
     this.hideOrbits();
-    this.switchOffSunLight();
 
     const planet = this.planets[targetObject.name];
 
