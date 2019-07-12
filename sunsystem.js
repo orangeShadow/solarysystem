@@ -1,5 +1,12 @@
 /* jshint esversion: 6 */
 /* eslint "no-param-reassign": "off" */
+import * as THREE from './node_modules/three/build/three.module.js';
+import { Lensflare, LensflareElement } from './node_modules/three/examples/jsm/objects/Lensflare.js';
+import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
+import TWEEN from './vendor/tween.js';
+import XRringGeometry from './vendor/xRingGeomerty.js';
+import dat from './node_modules/dat.gui/build/dat.gui.module.js';
+
 const textureLoader = new THREE.TextureLoader();
 const config = {
   earthSize: 12,
@@ -19,10 +26,10 @@ const planets = {
   sun: {
     material: 'basic',
     name: 'sun',
-    textureImg: './textures/planets/8k_sun.jpg',
+    textureImg: './textures/planets/2k_sun.jpg',
     light: {
       color: 0xffffff,
-      intensity: 1.8,
+      intensity: 1.2,
       distance: 3000,
       decay: 2,
       position: new THREE.Vector3(0, 0, 0),
@@ -34,7 +41,7 @@ const planets = {
   mercury: {
     material: 'lambert',
     name: 'mercury',
-    textureImg: './textures/planets/8k_mercury.jpg',
+    textureImg: './textures/planets/2k_mercury.jpg',
     sizeRatio: 0.41,
     selfSpeedRotationRatio: 0.001,
     sunOrbitRotationSpeed: 0.011,
@@ -43,7 +50,7 @@ const planets = {
   venus: {
     material: 'lambert',
     name: 'venus',
-    textureImg: './textures/planets/8k_venus_surface.jpg',
+    textureImg: './textures/planets/2k_venus_surface.jpg',
     sizeRatio: 0.95,
     selfSpeedRotationRatio: 0.002,
     sunOrbitRotationSpeed: 0.004,
@@ -58,13 +65,17 @@ const planets = {
         selfSpeedRotationRatio: 1,
         position: new THREE.Vector3(19, 0, 0),
         animate(item, config) {
-          item.rotation += config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
+          item.rotation.y += config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
         },
       },
     },
     material: 'lambert',
     name: 'earth',
-    textureImg: './imgs/earthmap1k.jpg',
+    textureImg: './textures/planets/2k_earth_daymap.jpg',
+    specularMap: './textures/planets/2k_earth_specular_map.tif',
+    bumpMap: './textures/planets/4k_earth_bump.jpg',
+    bumpScale: 0.2,
+    cloudsMap: './textures/planets/2k_earth_clouds.jpg',
     sizeRatio: 0.95,
     selfSpeedRotationRatio: 1,
     sunOrbitRotationSpeed: 0.0029,
@@ -74,13 +85,18 @@ const planets = {
         if (typeof (this.satellites[item.name]) !== 'undefined' && this.satellites[item.name].animate) {
           this.satellites[item.name].animate(item, config);
         }
+        /*
+        if (item.name === 'clouds') {
+          item.rotation.y += 0.0005;
+        }
+        */
       });
     },
   },
   mars: {
     material: 'lambert',
     name: 'mars',
-    textureImg: './textures/planets/8k_mars.jpg',
+    textureImg: './textures/planets/2k_mars.jpg',
     sizeRatio: 0.95,
     selfSpeedRotationRatio: 0.97,
     sunOrbitRotationSpeed: 0.0024,
@@ -90,7 +106,7 @@ const planets = {
   jupiter: {
     material: 'lambert',
     name: 'jupiter',
-    textureImg: './textures/planets/8k_jupiter.jpg',
+    textureImg: './textures/planets/2k_jupiter.jpg',
     sizeRatio: 3,
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.0013,
@@ -102,12 +118,14 @@ const planets = {
         name: 'ring',
         selfSpeedRotationRatio: 0,
         create(planet, config) {
-          const mesh = new THREE.Mesh(new THREE.XRingGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 32, 5, 0, Math.PI * 2), new THREE.MeshBasicMaterial({
-            map: THREE.ImageUtils.loadTexture('imgs/saturn-rings.png'),
+          const geometry = new XRringGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 32, 5, 0, Math.PI * 2);
+          const material = new THREE.MeshBasicMaterial({
+            map: textureLoader.load('./textures/planets/saturn-rings.png'),
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.6,
-          }));
+          });
+          const mesh = new THREE.Mesh(geometry, material);
           mesh.rotation.x = Math.PI / 25;
           return mesh;
         },
@@ -115,7 +133,7 @@ const planets = {
     },
     material: 'lambert',
     name: 'saturn',
-    textureImg: './textures/planets/8k_saturn.jpg',
+    textureImg: './textures/planets/2k_saturn.jpg',
     sizeRatio: 2.4,
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.00096,
@@ -143,11 +161,12 @@ const planets = {
 
 class SolarSystem {
   constructor(canvas) {
+    this.dpr = Math.min(window.devicePixelRatio, 2);
     this.config = config;
     this.planets = planets;
 
     this.fov = 50;
-    this.zPosition = 800;
+    this.cameraInitPosition = [0, 270, 800];
     this.sceneSize = 5000;
 
     this.enableSkybox = true;
@@ -166,8 +185,8 @@ class SolarSystem {
     this.targetObject = null;
 
     this.canvas = canvas;
-    this.width = canvas.offsetWidth * Math.min(window.devicePixelRatio, 2);
-    this.height = canvas.offsetHeight * Math.min(window.devicePixelRatio, 2);
+    this.width = canvas.offsetWidth * this.dpr;
+    this.height = canvas.offsetHeight * this.dpr;
     canvas.width = this.width;
     canvas.height = this.height;
 
@@ -189,13 +208,12 @@ class SolarSystem {
 
     // Создаем камеру
     this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, this.sceneSize);
-    window.camera = this.camera;
-    this.camera.position.set(0, 0, this.zPosition);
+    this.camera.position.set(...this.cameraInitPosition);
 
-    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.minDistance = this.config.radius(this.planets.sun.sizeRatio) * 4;
     this.controls.maxDistance = this.sceneSize / 3;
-    this.controls.rotateUp(Math.PI / 6);
+    // this.controls.rotateUp(Math.PI / 6);
 
     this.overviewState = null;
     requestAnimationFrame(() => {
@@ -250,8 +268,8 @@ class SolarSystem {
     const onResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
-        this.width = canvas.offsetWidth * Math.min(window.devicePixelRatio, 2);
-        this.height = canvas.offsetHeight * Math.min(window.devicePixelRatio, 2);
+        this.width = canvas.offsetWidth * this.dpr;
+        this.height = canvas.offsetHeight * this.dpr;
         canvas.width = this.width;
         canvas.height = this.height;
         this.camera.aspect = this.width / this.height;
@@ -285,16 +303,15 @@ class SolarSystem {
 
   createLensflare() {
     const textureFlare0 = textureLoader.load('textures/lensflare/lensflare0.png');
-    // const textureFlare2 = textureLoader.load('textures/lensflare/lensflare2.png');
     const textureFlare3 = textureLoader.load('textures/lensflare/lensflare3.png');
 
-    const lensflare = new THREE.Lensflare();
+    const lensflare = new Lensflare();
 
-    lensflare.addElement(new THREE.LensflareElement(textureFlare0, 600, 0, new THREE.Color(0xffffff)));
-    lensflare.addElement(new THREE.LensflareElement(textureFlare3, 60, 0.6));
-    lensflare.addElement(new THREE.LensflareElement(textureFlare3, 70, 0.7));
-    lensflare.addElement(new THREE.LensflareElement(textureFlare3, 120, 0.9));
-    lensflare.addElement(new THREE.LensflareElement(textureFlare3, 70, 1));
+    lensflare.addElement(new LensflareElement(textureFlare0, 600, 0, new THREE.Color(0xffffff)));
+    lensflare.addElement(new LensflareElement(textureFlare3, 60, 0.6));
+    lensflare.addElement(new LensflareElement(textureFlare3, 70, 0.7));
+    lensflare.addElement(new LensflareElement(textureFlare3, 120, 0.9));
+    lensflare.addElement(new LensflareElement(textureFlare3, 70, 1));
 
     this.lensflare = lensflare;
     this.lensflare.position.set(0, 200, 0);
@@ -398,9 +415,19 @@ class SolarSystem {
         map: texture,
       });
     } else if (planet.material === 'lambert') {
-      material = new THREE.MeshLambertMaterial({
+      const textureConfig = {
         map: texture,
-      });
+        shininess: 5,
+      };
+      if (planet.specularMap) {
+        textureConfig.specularMap = textureLoader.load(planet.specularMap);
+      }
+      if (planet.bumpMap) {
+        textureConfig.bumpMap = textureLoader.load(planet.bumpMap);
+        textureConfig.bumpScale = planet.bumpScale || 1;
+      }
+
+      material = new THREE.MeshPhongMaterial(textureConfig);
     }
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -418,6 +445,22 @@ class SolarSystem {
 
         mesh.add(satteliteMesh);
       });
+    }
+
+    if (planet.cloudsMap) {
+      const cloudsTexture = textureLoader.load(planet.cloudsMap);
+      const cloudsGeometry = new THREE.SphereGeometry(this.config.radius(planet.sizeRatio) + 0.005, 128, 128);
+      const cloudsMaterial = new THREE.MeshPhongMaterial({
+        transparent: true,
+        opacity: 0.75,
+        alphaMap: cloudsTexture,
+        bumpMap: cloudsTexture,
+        bumpScale: 0.15,
+        specular: new THREE.Color(0x000000),
+      });
+      const cloudsMesh = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
+      cloudsMesh.name = 'clouds';
+      mesh.add(cloudsMesh);
     }
 
     if (planet.position) {
@@ -442,8 +485,19 @@ class SolarSystem {
      */
   _createSkybox() {
     const { sceneSize } = this;
-    const skyboxGeometry = new THREE.CubeGeometry(sceneSize, sceneSize, sceneSize);
 
+    const skyboxGeometry = new THREE.SphereGeometry(sceneSize / 2, 32, 32);
+
+    const skyboxMaterials = new THREE.MeshBasicMaterial();
+    skyboxMaterials.map = textureLoader.load('./textures/8k_stars_milky_way.jpg');
+    skyboxMaterials.side = THREE.BackSide;
+
+    const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
+
+    return skybox;
+
+    /*
+    const skyboxGeometry = new THREE.CubeGeometry(sceneSize, sceneSize, sceneSize);
     const skyboxMaterials = [
       new THREE.MeshBasicMaterial({
         map: (new THREE.TGALoader()).load('./imgs/ame_nebula/purplenebula_ft.tga'),
@@ -477,6 +531,7 @@ class SolarSystem {
     const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
 
     return skybox;
+    */
   }
 
   /**
@@ -550,9 +605,8 @@ class SolarSystem {
       }
 
       const planet = planets[item.name];
-      const stopPlanet = this.targetObject;
 
-      if (this.enableSunOrbitAnimate && (!stopPlanet || (stopPlanet && item.name !== stopPlanet.name))) {
+      if (this.enableSunOrbitAnimate && !this.targetObject) {
         this.runBySunOrbit(planet, item);
       }
 
