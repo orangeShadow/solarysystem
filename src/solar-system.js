@@ -416,8 +416,8 @@ class SolarSystem {
       }
     }
 
-    if (({}).hasOwnProperty.call(element, 'geometry') && ({}).hasOwnProperty.call(element.geometry, 'dispose')) {
-      element.geometry.dispose();
+    if (({}).hasOwnProperty.call(element, 'texture') && ({}).hasOwnProperty.call(element.geometry, 'texture')) {
+      element.texture.dispose();
     }
 
     if (({}).hasOwnProperty.call(element, 'dispose')) {
