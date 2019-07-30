@@ -390,18 +390,38 @@ class SolarSystem {
   destroy() {
     this.detachEvents();
     this.destroyObject(this.scene);
+    this.renderer.renderLists.dispose();
     this.destroyed = true;
   }
 
-  destroyObject(object) {
+  destroyObject(element) {
     const self = this;
-    if (object.children) {
-      Object.values(object.children).forEach((item) => {
+    if (element.children) {
+      Object.values(element.children).forEach((item) => {
         self.destroyObject(item);
       });
     }
-    if (({}).hasOwnProperty.call(object, 'dispose')) {
-      object.dispose();
+
+    if (({}).hasOwnProperty.call(element, 'geometry') && ({}).hasOwnProperty.call(element.geometry, 'dispose')) {
+      element.geometry.dispose();
+    }
+
+    if (({}).hasOwnProperty.call(element, 'material') && ({}).hasOwnProperty.call(element.material, 'material')) {
+      if (element.material.length > 0) {
+        Object.values(element.material).forEach((item) => {
+          item.dispose();
+        });
+      } else {
+        element.material.dispose();
+      }
+    }
+
+    if (({}).hasOwnProperty.call(element, 'geometry') && ({}).hasOwnProperty.call(element.geometry, 'dispose')) {
+      element.geometry.dispose();
+    }
+
+    if (({}).hasOwnProperty.call(element, 'dispose')) {
+      element.dispose();
     }
   }
 
