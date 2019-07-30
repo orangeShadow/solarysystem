@@ -389,7 +389,20 @@ class SolarSystem {
 
   destroy() {
     this.detachEvents();
+    this.destroyObject(this.scene);
     this.destroyed = true;
+  }
+
+  destroyObject(object) {
+    const self = this;
+    if (object.children) {
+      Object.values(object.children).forEach((item) => {
+        self.destroyObject(item);
+      });
+    }
+    if (({}).hasOwnProperty.call(object, 'dispose')) {
+      object.dispose();
+    }
   }
 
   preloadAssets(cb) {
