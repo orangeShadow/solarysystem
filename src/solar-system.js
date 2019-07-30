@@ -1,37 +1,41 @@
 /* jshint esversion: 6 */
 /* eslint "no-param-reassign": "off" */
-import * as THREE from './node_modules/three/build/three.module.js';
-import { Lensflare, LensflareElement } from './node_modules/three/examples/jsm/objects/Lensflare.js';
-import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from 'three/build/three.module.js';
+import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from './vendor/GLTFLoader';
 import TWEEN from './vendor/tween.js';
 import XRringGeometry from './vendor/xRingGeomerty.js';
-// import dat from './node_modules/dat.gui/build/dat.gui.module.js';
+// import dat from 'dat.gui/build/dat.gui.module.js';
+
+import Shuttle from './models/shuttle/scene';
+import NearSatellite from './models/near_satellite/scene';
 
 const TEXTURES = {
-  sun: './textures/planets/2k_sun.jpg',
-  mercury: './textures/planets/2k_mercury.jpg',
-  venus: './textures/planets/2k_venus_surface.jpg',
-  earth_daymap: './textures/planets/2k_earth_daymap.jpg',
-  earth_specular_map: './textures/planets/2k_earth_specular_map.png',
-  earth_bump_map: './textures/planets/4k_earth_bump.jpg',
-  earth_clouds: './textures/planets/2k_earth_clouds.jpg',
-  moon: './textures/planets/2k_moon.jpg',
-  mars: './textures/planets/2k_mars.jpg',
-  jupiter: './textures/planets/2k_jupiter.jpg',
-  saturn: './textures/planets/2k_saturn.jpg',
-  saturn_rings: './textures/planets/saturn-rings.png',
-  uranus: './textures/planets/2k_uranus.jpg',
-  neptune: './textures/planets/2k_neptune.jpg',
+  sun: require('./textures/planets/2k_sun.jpg'),
+  mercury: require('./textures/planets/2k_mercury.jpg'),
+  venus: require('./textures/planets/2k_venus_surface.jpg'),
+  earth_daymap: require('./textures/planets/2k_earth_daymap.jpg'),
+  earth_specular_map: require('./textures/planets/2k_earth_specular_map.png'),
+  earth_bump_map: require('./textures/planets/4k_earth_bump.jpg'),
+  earth_clouds: require('./textures/planets/2k_earth_clouds.jpg'),
+  moon: require('./textures/planets/2k_moon.jpg'),
+  mars: require('./textures/planets/2k_mars.jpg'),
+  jupiter: require('./textures/planets/2k_jupiter.jpg'),
+  saturn: require('./textures/planets/2k_saturn.jpg'),
+  saturn_rings: require('./textures/planets/saturn-rings.png'),
+  uranus: require('./textures/planets/2k_uranus.jpg'),
+  neptune: require('./textures/planets/2k_neptune.jpg'),
 
-  milky_way: './textures/8k_stars_milky_way.jpg',
-  lens_flare_0: './textures/lensflare/lensflare0.png',
-  lens_flare_3: './textures/lensflare/lensflare3.png',
+  milky_way: require('./textures/8k_stars_milky_way.jpg'),
+  lens_flare_0: require('./textures/lensflare/lensflare0.png'),
+  lens_flare_3: require('./textures/lensflare/lensflare3.png'),
 };
 
 const MODELS = {
-  shuttle: './models/shuttle/scene.gltf',
-  satellite: './models/near_satellite/scene.gltf',
+  shuttle: Shuttle,
+  satellite: NearSatellite,
 };
 
 const LOADED_TEXTURES = {};
@@ -132,6 +136,7 @@ const planets = {
         },
         animate(item) {
           item.rotation.y -= 0.02;
+          item.rotation.x += 0.002;
         },
       },
     },
@@ -226,10 +231,14 @@ const planets = {
 };
 
 class SolarSystem {
-  constructor({ canvas, dpr, onLoad } = {}) {
+  constructor({ canvas, dpr, onLoad, onRunToPlanet, onRunToPlanetComplete, onRunToOverview } = {}) {
     this.dpr = dpr || Math.min(window.devicePixelRatio, 2);
     this.config = config;
     this.planets = planets;
+
+    this.onRunToPlanet = onRunToPlanet;
+    this.onRunToPlanetComplete = onRunToPlanetComplete;
+    this.onRunToOverview = onRunToOverview;
 
     this.fov = 50;
     this.cameraInitPosition = [0, 270, 800];
@@ -245,11 +254,17 @@ class SolarSystem {
     this.meshPlanets = [];
     this.meshOrbits = [];
 
+    this.animations = [];
+
     /**
      * Объект на котором наведена камера в данный момент
      */
     this.targetObject = null;
 
+    if (!canvas) {
+      canvas = document.querySelector('canvas');
+    }
+    if (!canvas) return;
     this.canvas = canvas;
     this.width = canvas.offsetWidth * this.dpr;
     this.height = canvas.offsetHeight * this.dpr;
@@ -279,6 +294,7 @@ class SolarSystem {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.minDistance = this.config.radius(this.planets.sun.sizeRatio) * 4;
     this.controls.maxDistance = this.sceneSize / 3;
+    this.controls.enablePan = false;
 
     this.overviewState = null;
     requestAnimationFrame(() => {
@@ -289,27 +305,31 @@ class SolarSystem {
 
     this._setDefaultOrbitPosition();
 
-    // const onDocumentTouchEnd = (event) => {
-    //   this.mouse.x = +(event.changedTouches[0].pageX / window.innerWidth) * 2 + -1;
-    //   this.mouse.y = -(event.changedTouches[0].pageY / window.innerHeight) * 2 + 1;
+    this.allowPlanetClick = true;
 
-    //   requestAnimationFrame(() => {
-    //     const intersects = this.raycaster.intersectObjects(this.getMeshPlanets());
-    //     if (intersects.length > 0) {
-    //       let intersectsCurrent;
-    //       intersects.forEach((obj) => {
-    //         if (intersectsCurrent) return;
-    //         if (obj.object === this.targetObject) {
-    //           intersectsCurrent = true;
-    //           return;
-    //         }
-    //         this.runToPlanet(obj.object.name);
-    //       });
-    //     }
-    //   });
-    // };
+    const onDocumentTouchEnd = (event) => {
+      if (!this.allowPlanetClick) return;
+      this.mouse.x = +(event.changedTouches[0].pageX / window.innerWidth) * 2 + -1;
+      this.mouse.y = -(event.changedTouches[0].pageY / window.innerHeight) * 2 + 1;
+
+      requestAnimationFrame(() => {
+        const intersects = this.raycaster.intersectObjects(this.getMeshPlanets());
+        if (intersects.length > 0) {
+          let intersectsCurrent;
+          intersects.forEach((obj) => {
+            if (intersectsCurrent) return;
+            if (obj.object === this.targetObject) {
+              intersectsCurrent = true;
+              return;
+            }
+            this.runToPlanet(obj.object.name);
+          });
+        }
+      });
+    };
 
     const onDocumentClick = (event) => {
+      if (!this.allowPlanetClick) return;
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -345,13 +365,13 @@ class SolarSystem {
 
     this.attachEvents = () => {
       this.canvas.addEventListener('click', onDocumentClick, false);
-      // this.canvas.addEventListener('touchend', onDocumentTouchEnd, false);
+      this.canvas.addEventListener('touchend', onDocumentTouchEnd, false);
       window.addEventListener('resize', onResize, false);
     };
 
     this.detachEvents = () => {
       this.canvas.removeEventListener('click', onDocumentClick, false);
-      // this.canvas.removeEventListener('touchend', onDocumentTouchEnd, false);
+      this.canvas.removeEventListener('touchend', onDocumentTouchEnd, false);
       window.removeEventListener('resize', onResize, false);
     };
 
@@ -361,7 +381,6 @@ class SolarSystem {
       this.createSolarSystem();
       this.createLensflare();
       this.loop();
-      // this.createGui();
       if (onLoad && !this.destroyed) {
         onLoad();
       }
@@ -387,7 +406,7 @@ class SolarSystem {
     });
     Object.keys(MODELS).forEach((key) => {
       promises.push(new Promise((resolve) => {
-        modelLoader.load(MODELS[key], (res) => {
+        modelLoader.parseFromObject(MODELS[key], '', (res) => {
           LOADED_MODELS[key] = res;
           resolve();
         });
@@ -440,7 +459,7 @@ class SolarSystem {
 
   createGui() {
     const self = this;
-    self.gui = new dat.GUI();
+    // self.gui = new dat.GUI();
 
     const controlsData = {
       switchToSolarSystem() {
@@ -498,7 +517,7 @@ class SolarSystem {
   _setDefaultOrbitPosition() {
     this.planetOrbitPosition = {};
     Object.values(this.planets).forEach((item) => {
-      this.planetOrbitPosition[item.name] = (item.sunOrbitRotationSpeed * 365 * 24 * 60) % (Math.PI * 2);
+      this.planetOrbitPosition[item.name] = (item.sunOrbitRotationSpeed * 24 * 60) % (Math.PI * 2);
     });
   }
 
@@ -605,43 +624,6 @@ class SolarSystem {
     const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
 
     return skybox;
-
-    /*
-    const skyboxGeometry = new THREE.CubeGeometry(sceneSize, sceneSize, sceneSize);
-    const skyboxMaterials = [
-      new THREE.MeshBasicMaterial({
-        map: (new THREE.TGALoader()).load('./imgs/ame_nebula/purplenebula_ft.tga'),
-        side: THREE.DoubleSide,
-        color: 0xffffff,
-      }),
-      new THREE.MeshBasicMaterial({
-        map: new THREE.TGALoader().load('./imgs/ame_nebula/purplenebula_bk.tga'),
-        side: THREE.DoubleSide,
-        color: 0xffffff,
-      }),
-      new THREE.MeshBasicMaterial({
-        map: new THREE.TGALoader().load('./imgs/ame_nebula/purplenebula_up.tga'),
-        side: THREE.DoubleSide,
-        color: 0xffffff,
-      }),
-      new THREE.MeshBasicMaterial({
-        map: new THREE.TGALoader().load('./imgs/ame_nebula/purplenebula_dn.tga'),
-        side: THREE.DoubleSide,
-      }),
-      new THREE.MeshBasicMaterial({
-        map: new THREE.TGALoader().load('./imgs/ame_nebula/purplenebula_rt.tga'),
-        side: THREE.DoubleSide,
-      }),
-      new THREE.MeshBasicMaterial({
-        map: new THREE.TGALoader().load('./imgs/ame_nebula/purplenebula_lf.tga'),
-        side: THREE.DoubleSide,
-      }),
-    ];
-
-    const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterials);
-
-    return skybox;
-    */
   }
 
   /**
@@ -790,13 +772,18 @@ class SolarSystem {
     const newControlsTarget = { ...this.overviewState.controlsTarget };
 
     controls.enableZoom = false;
-    controls.enablePan = false;
     controls.enableRotate = false;
     controls.enableKeys = false;
     controls.minDistance = 0;
     controls.maxDistance = Infinity;
 
-    new TWEEN.Tween(currentControlsTarget)
+    this.animations.forEach((anim) => {
+      if (anim && anim.stop) anim.stop();
+    });
+
+    if (this.onRunToOverview) this.onRunToOverview();
+
+    const anim1 = new TWEEN.Tween(currentControlsTarget)
       .to(newControlsTarget, duration)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
@@ -805,16 +792,16 @@ class SolarSystem {
       })
       .onComplete(() => {
         controls.enableZoom = true;
-        controls.enablePan = true;
         controls.enableRotate = true;
         controls.enableKeys = true;
         controls.minDistance = this.config.radius(this.planets.sun.sizeRatio) * 4;
         controls.maxDistance = this.sceneSize / 3;
         if (onComplete) onComplete();
+        if (this.onRunToOverviewComplete) this.onRunToOverviewComplete();
       })
       .start();
 
-    new TWEEN.Tween(currentCameraPosition)
+    const anim2 = new TWEEN.Tween(currentCameraPosition)
       .to(newCameraPosition, duration)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
@@ -822,6 +809,8 @@ class SolarSystem {
         Object.assign(camera.position, { x, y, z });
       })
       .start();
+
+    this.animations = [anim1, anim2];
   }
 
   /**
@@ -858,7 +847,6 @@ class SolarSystem {
     };
 
     controls.enableZoom = false;
-    controls.enablePan = false;
     controls.enableRotate = false;
     controls.enableKeys = false;
     controls.minDistance = 0;
@@ -867,7 +855,13 @@ class SolarSystem {
     const currentControlsTarget = { ...controls.target };
     const newControlsTarget = { ...targetObject.position };
 
-    new TWEEN.Tween(currentControlsTarget)
+    this.animations.forEach((anim) => {
+      if (anim && anim.stop) anim.stop();
+    });
+
+    if (this.onRunToPlanet) this.onRunToPlanet(objectName);
+
+    const anim1 = new TWEEN.Tween(currentControlsTarget)
       .to(newControlsTarget, duration)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
@@ -876,16 +870,17 @@ class SolarSystem {
       })
       .onComplete(() => {
         controls.enableZoom = true;
-        controls.enablePan = true;
         controls.enableRotate = true;
         controls.enableKeys = true;
         controls.minDistance = this.config.radius(planet.sizeRatio) * 2;
         controls.maxDistance = this.config.radius(planet.sizeRatio) * 5;
         if (onComplete) onComplete();
+        if (this.onRunToPlanetComplete) this.onRunToPlanetComplete(objectName);
       })
       .start();
 
-    new TWEEN.Tween(currentTarget)
+
+    const anim2 = new TWEEN.Tween(currentTarget)
       .to(newPositon, duration)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
@@ -894,6 +889,8 @@ class SolarSystem {
         camera.position.z = currentTarget.z;
       })
       .start();
+
+    this.animations = [anim1, anim2];
   }
 }
 

@@ -2,7 +2,7 @@
  * @author Kaleb Murphy
  * Modified uvs.push on line no. 42.
  */
-import * as THREE from '../node_modules/three/build/three.module.js';
+import * as THREE from 'three/build/three.module.js';
 
 class XRingGeometry extends THREE.Geometry {
   constructor(innerRadius, outerRadius, thetaSegments, phiSegments, thetaStart, thetaLength) {
