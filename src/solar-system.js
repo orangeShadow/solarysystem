@@ -389,39 +389,59 @@ class SolarSystem {
 
   destroy() {
     this.detachEvents();
-    this.destroyObject(this.scene);
-    this.renderer.renderLists.dispose();
+    Object.values(LOADED_TEXTURES).forEach((item) => {
+      if (({}).hasOwnProperty.call(item, 'despose')) {
+        item.despose();
+      }
+    });
+    this.disposeHierarchy(this.scene, this.disposeNode, this);
     this.destroyed = true;
   }
 
-  destroyObject(element) {
-    const self = this;
-    if (element.children) {
-      Object.values(element.children).forEach((item) => {
-        self.destroyObject(item);
-      });
+  disposeMaterial(item) {
+    if (item.map) {
+      item.map.dispose();
     }
-
-    if (({}).hasOwnProperty.call(element, 'geometry') && ({}).hasOwnProperty.call(element.geometry, 'dispose')) {
-      element.geometry.dispose();
+    if (item.lightMap) {
+      item.lightMap.dispose();
     }
+    if (item.bumpMap) {
+      item.bumpMap.dispose();
+    }
+    if (item.normalMap) {
+      item.normalMap.dispose();
+    }
+    if (item.specularMap) {
+      item.specularMap.dispose();
+    }
+    if (item.envMap) {
+      item.envMap.dispose();
+    }
+    item.dispose();
+  }
 
-    if (({}).hasOwnProperty.call(element, 'material') && ({}).hasOwnProperty.call(element.material, 'material')) {
-      if (element.material.length > 0) {
-        Object.values(element.material).forEach((item) => {
-          item.dispose();
-        });
-      } else {
-        element.material.dispose();
+  disposeNode(node, globalObject) {
+    if (node instanceof THREE.Mesh) {
+      if (node.geometry) {
+        node.geometry.dispose();
+      }
+      if (node.material) {
+        if (node.material instanceof THREE.MeshFaceMaterial) {
+          node.material.materials.forEach((item) => {
+            globalObject.disposeMaterial(item);
+          });
+        } else {
+          globalObject.disposeMaterial(node.material);
+        }
       }
     }
+  }
 
-    if (({}).hasOwnProperty.call(element, 'texture') && ({}).hasOwnProperty.call(element.geometry, 'texture')) {
-      element.texture.dispose();
-    }
-
-    if (({}).hasOwnProperty.call(element, 'dispose')) {
-      element.dispose();
+  disposeHierarchy(node, callback, globalObject) {
+    for (let i = node.children.length - 1; i >= 0; i -= 1) {
+      const child = node.children[i];
+      this.disposeHierarchy(child, callback, globalObject);
+      callback(child, globalObject);
     }
   }
 
