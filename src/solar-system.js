@@ -231,7 +231,7 @@ const planets = {
 };
 
 class SolarSystem {
-  constructor({ canvas, dpr, onLoad, onRunToPlanet, onRunToPlanetComplete, onRunToOverview } = {}) {
+  constructor({ canvas, dpr, onLoad, onRunToPlanet, onRunToPlanetComplete, onRunToOverview, onRunToOverviewComplete } = {}) {
     this.dpr = dpr || Math.min(window.devicePixelRatio, 2);
     this.config = config;
     this.planets = planets;
@@ -239,6 +239,7 @@ class SolarSystem {
     this.onRunToPlanet = onRunToPlanet;
     this.onRunToPlanetComplete = onRunToPlanetComplete;
     this.onRunToOverview = onRunToOverview;
+    this.onRunToOverviewComplete = onRunToOverviewComplete;
 
     this.fov = 50;
     this.cameraInitPosition = [0, 270, 800];

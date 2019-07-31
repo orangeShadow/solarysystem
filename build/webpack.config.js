@@ -4,6 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSPlugin = require('optimize-css-assets-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const ImageminPlugin = require('imagemin-webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const path = require('path');
 
@@ -147,6 +148,12 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: 'app.css',
     }),
+    new CopyWebpackPlugin([
+      {
+        from: resolvePath('src/iframe.html'),
+        to: resolvePath('www/iframe.html'),
+      },
+    ]),
     ...(env === 'production' ? [
       // Make sure that the plugin is after any plugins that add images, example `CopyWebpackPlugin`
       new ImageminPlugin({
