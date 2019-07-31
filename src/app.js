@@ -3,7 +3,7 @@ import SolarSystem from './solar-system';
 
 function emit(event, data) {
   if (!window.top) return;
-  window.top.postMessage({ event, data });
+  window.top.postMessage({ event, data }, '*');
 }
 
 const solarSystem = new SolarSystem({
