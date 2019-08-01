@@ -389,19 +389,30 @@ class SolarSystem {
   }
 
   destroy() {
-    this.detachEvents();
-    Object.values(LOADED_TEXTURES).forEach((item) => {
-      if (({}).hasOwnProperty.call(item, 'despose')) {
-        item.despose();
-      }
+    const self = this;
+    self.detachEvents();
+    Object.keys(LOADED_TEXTURES).forEach((key) => {
+      if (LOADED_TEXTURES[key].dispose) LOADED_TEXTURES[key].dispose();
+      LOADED_TEXTURES[key] = null;
     });
-    this.disposeHierarchy(this.scene, this.disposeNode, this);
-    this.destroyed = true;
+    Object.keys(LOADED_MODELS).forEach((key) => {
+      if (LOADED_MODELS[key].dispose) LOADED_MODELS[key].dispose();
+      LOADED_MODELS[key] = null;
+    });
+    self.disposeHierarchy(self.scene);
+    self.renderer.renderLists.dispose();
+
+    Object.keys(self).forEach((key) => {
+      self[key] = null;
+      delete self[key];
+    });
+    self.destroyed = true;
   }
 
   disposeMaterial(item) {
     if (item.map) {
       item.map.dispose();
+      item.map = null;
     }
     if (item.lightMap) {
       item.lightMap.dispose();
@@ -421,28 +432,33 @@ class SolarSystem {
     item.dispose();
   }
 
-  disposeNode(node, globalObject) {
-    if (node instanceof THREE.Mesh) {
-      if (node.geometry) {
-        node.geometry.dispose();
-      }
-      if (node.material) {
-        if (node.material instanceof THREE.MeshFaceMaterial) {
-          node.material.materials.forEach((item) => {
-            globalObject.disposeMaterial(item);
-          });
-        } else {
-          globalObject.disposeMaterial(node.material);
-        }
+  disposeNode(node) {
+    const self = this;
+    if (node.geometry) {
+      node.geometry.dispose();
+    }
+    if (node.material) {
+      if (node.material instanceof THREE.MeshFaceMaterial) {
+        node.material.materials.forEach((item) => {
+          self.disposeMaterial(item);
+        });
+      } else {
+        self.disposeMaterial(node.material);
       }
     }
+    if (node.dispose) node.dispose();
   }
 
-  disposeHierarchy(node, callback, globalObject) {
+  disposeHierarchy(node) {
+    const self = this;
     for (let i = node.children.length - 1; i >= 0; i -= 1) {
       const child = node.children[i];
-      this.disposeHierarchy(child, callback, globalObject);
-      callback(child, globalObject);
+      self.disposeHierarchy(child);
+      self.disposeNode(child);
+      if (node === self.scene) {
+        self.scene.remove(node);
+      }
+      node.children[i] = null;
     }
   }
 
