@@ -390,7 +390,60 @@ class SolarSystem {
 
   destroy() {
     this.detachEvents();
+    Object.values(LOADED_TEXTURES).forEach((item) => {
+      if (({}).hasOwnProperty.call(item, 'despose')) {
+        item.despose();
+      }
+    });
+    this.disposeHierarchy(this.scene, this.disposeNode, this);
     this.destroyed = true;
+  }
+
+  disposeMaterial(item) {
+    if (item.map) {
+      item.map.dispose();
+    }
+    if (item.lightMap) {
+      item.lightMap.dispose();
+    }
+    if (item.bumpMap) {
+      item.bumpMap.dispose();
+    }
+    if (item.normalMap) {
+      item.normalMap.dispose();
+    }
+    if (item.specularMap) {
+      item.specularMap.dispose();
+    }
+    if (item.envMap) {
+      item.envMap.dispose();
+    }
+    item.dispose();
+  }
+
+  disposeNode(node, globalObject) {
+    if (node instanceof THREE.Mesh) {
+      if (node.geometry) {
+        node.geometry.dispose();
+      }
+      if (node.material) {
+        if (node.material instanceof THREE.MeshFaceMaterial) {
+          node.material.materials.forEach((item) => {
+            globalObject.disposeMaterial(item);
+          });
+        } else {
+          globalObject.disposeMaterial(node.material);
+        }
+      }
+    }
+  }
+
+  disposeHierarchy(node, callback, globalObject) {
+    for (let i = node.children.length - 1; i >= 0; i -= 1) {
+      const child = node.children[i];
+      this.disposeHierarchy(child, callback, globalObject);
+      callback(child, globalObject);
+    }
   }
 
   preloadAssets(cb) {
@@ -579,13 +632,14 @@ class SolarSystem {
 
     if (planet.cloudsMap) {
       const cloudsTexture = LOADED_TEXTURES[planet.cloudsMap];
-      const cloudsGeometry = new THREE.SphereGeometry(this.config.radius(planet.sizeRatio) + 0.005, 128, 128);
+      const cloudsGeometry = new THREE.SphereGeometry(this.config.radius(planet.sizeRatio) + 0.005, 64, 64);
       const cloudsMaterial = new THREE.MeshPhongMaterial({
         transparent: true,
-        opacity: 0.75,
+        opacity: 1,
         alphaMap: cloudsTexture,
         bumpMap: cloudsTexture,
-        bumpScale: 0.15,
+        bumpScale: 0.1,
+        color: 0xffffff,
         specular: new THREE.Color(0x000000),
       });
       const cloudsMesh = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
