@@ -631,13 +631,14 @@ class SolarSystem {
 
     if (planet.cloudsMap) {
       const cloudsTexture = LOADED_TEXTURES[planet.cloudsMap];
-      const cloudsGeometry = new THREE.SphereGeometry(this.config.radius(planet.sizeRatio) + 0.005, 128, 128);
+      const cloudsGeometry = new THREE.SphereGeometry(this.config.radius(planet.sizeRatio) + 0.005, 64, 64);
       const cloudsMaterial = new THREE.MeshPhongMaterial({
         transparent: true,
-        opacity: 0.75,
+        opacity: 1,
         alphaMap: cloudsTexture,
         bumpMap: cloudsTexture,
-        bumpScale: 0.15,
+        bumpScale: 0.1,
+        color: 0xffffff,
         specular: new THREE.Color(0x000000),
       });
       const cloudsMesh = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
