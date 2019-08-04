@@ -26,6 +26,7 @@ const TEXTURES = {
   saturn: require('./textures/planets/2k_saturn.jpg'),
   saturn_rings: require('./textures/planets/saturn-rings.png'),
   uranus: require('./textures/planets/2k_uranus.jpg'),
+  uranus_rings: require('./textures/planets/uranus-rings.jpg'),
   neptune: require('./textures/planets/2k_neptune.jpg'),
 
   milky_way: require('./textures/8k_stars_milky_way.jpg'),
@@ -213,6 +214,23 @@ const planets = {
     radiusOffset: 800,
   },
   uranus: {
+    satellites: {
+      ring: {
+        name: 'ring',
+        selfSpeedRotationRatio: 0,
+        create(planet, config) {
+          const geometry = new XRringGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 32, 5, 0, Math.PI * 2);
+          const material = new THREE.MeshBasicMaterial({
+            map: LOADED_TEXTURES.uranus_rings,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.6,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          return mesh;
+        },
+      },
+    },
     material: 'lambert',
     name: 'uranus',
     textureImg: 'uranus',
