@@ -96,10 +96,11 @@ const planets = {
         name: 'moon',
         textureImg: 'moon',
         selfSpeedRotationRatio: 1,
-        position: new THREE.Vector3(19, 0, 0),
-        animate(item, config) {
-          item.rotation.y += config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
-        },
+        position: new THREE.Vector3(19, -5 * Math.PI / 2, 0),
+        rotation: new THREE.Euler(0, 0, -0.4014257),
+        // animate(item, config) {
+        //   item.rotation.y -= config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
+        // },
       },
       nasa: {
         create(planet, config, mesh) {
@@ -151,6 +152,7 @@ const planets = {
     selfSpeedRotationRatio: 1,
     sunOrbitRotationSpeed: 0.0029,
     radiusOffset: 150,
+    rotation: new THREE.Euler(0, 0, 0.4014257),
     animate(mesh, config) {
       mesh.children.forEach((item) => {
         if (typeof (this.satellites[item.name]) !== 'undefined' && this.satellites[item.name].animate) {
@@ -218,6 +220,7 @@ const planets = {
     selfSpeedRotationRatio: 1.4,
     sunOrbitRotationSpeed: 0.00068,
     radiusOffset: 1000,
+    rotation: new THREE.Euler(0, 0, 1.7079792),
   },
   neptune: {
     material: 'lambert',
@@ -227,6 +230,7 @@ const planets = {
     selfSpeedRotationRatio: 1.7,
     sunOrbitRotationSpeed: 0.00054,
     radiusOffset: 1200,
+    rotation: new THREE.Euler(0, 0, 0.4942772),
   },
 };
 
@@ -248,7 +252,7 @@ class SolarSystem {
     this.enableSkybox = true;
     this.enableSkybox = true;
     this.enableOrbit = true;
-    this.enableAxios = false;
+    this.enableAxios = true;
     this.enableSunOrbitAnimate = true;
     this.enableSelfOrbitAnimate = true;
 
@@ -642,6 +646,11 @@ class SolarSystem {
           satteliteMesh = sattelite.create(planet, this.config, mesh);
         }
         if (!satteliteMesh) return;
+        const axes = new THREE.AxesHelper(30);
+        axes.material.depthTest = false;
+        axes.renderOrder = 1;
+        axes.size = satteliteMesh.radius + 10;
+        satteliteMesh.add(axes);
         mesh.add(satteliteMesh);
       });
     }
@@ -673,7 +682,11 @@ class SolarSystem {
       mesh.position.z = planet.radius;
     }
 
-    mesh.rotation.y = Math.PI / 2;
+    console.log(planet, mesh.rotation);
+
+    if (planet.rotation) {
+      mesh.rotation.copy(planet.rotation);
+    }
 
     return mesh;
   }
