@@ -270,7 +270,7 @@ class SolarSystem {
     this.enableSkybox = true;
     this.enableSkybox = true;
     this.enableOrbit = true;
-    this.enableAxios = true;
+    this.enableAxios = false;
     this.enableSunOrbitAnimate = true;
     this.enableSelfOrbitAnimate = true;
 
