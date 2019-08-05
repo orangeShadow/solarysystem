@@ -664,11 +664,6 @@ class SolarSystem {
           satteliteMesh = sattelite.create(planet, this.config, mesh);
         }
         if (!satteliteMesh) return;
-        const axes = new THREE.AxesHelper(30);
-        axes.material.depthTest = false;
-        axes.renderOrder = 1;
-        axes.size = satteliteMesh.radius + 10;
-        satteliteMesh.add(axes);
         mesh.add(satteliteMesh);
       });
     }
@@ -699,8 +694,6 @@ class SolarSystem {
       mesh.position.x = planet.radius;
       mesh.position.z = planet.radius;
     }
-
-    console.log(planet, mesh.rotation);
 
     if (planet.rotation) {
       mesh.rotation.copy(planet.rotation);
