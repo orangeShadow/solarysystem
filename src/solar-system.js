@@ -97,7 +97,8 @@ const planets = {
         name: 'moon',
         textureImg: 'moon',
         selfSpeedRotationRatio: 1,
-        position: new THREE.Vector3(19, -5 * Math.PI / 2, 0),
+        // position: new THREE.Vector3(19, -5 * Math.PI / 2, 0),
+        position: new THREE.Vector3(19, 0, 0),
         rotation: new THREE.Euler(0, 0, -0.4014257),
         // animate(item, config) {
         //   item.rotation.y -= config.calculateSelfSpeedRotation(this.selfSpeedRotationRatio);
@@ -153,17 +154,13 @@ const planets = {
     selfSpeedRotationRatio: 1,
     sunOrbitRotationSpeed: 0.0029,
     radiusOffset: 150,
-    rotation: new THREE.Euler(0, 0, 0.4014257),
+    // rotation: new THREE.Euler(0, 0, 0.4014257),
+    rotation: new THREE.Euler(0, 0, 0.4014257 / 2),
     animate(mesh, config) {
       mesh.children.forEach((item) => {
         if (typeof (this.satellites[item.name]) !== 'undefined' && this.satellites[item.name].animate) {
           this.satellites[item.name].animate(item, config);
         }
-        /*
-        if (item.name === 'clouds') {
-          item.rotation.y += 0.0005;
-        }
-        */
       });
     },
   },
@@ -192,7 +189,7 @@ const planets = {
         name: 'ring',
         selfSpeedRotationRatio: 0,
         create(planet, config) {
-          const geometry = new XRringGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 32, 5, 0, Math.PI * 2);
+          const geometry = new XRringGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 64, 5, 0, Math.PI * 2);
           const material = new THREE.MeshBasicMaterial({
             map: LOADED_TEXTURES.saturn_rings,
             side: THREE.DoubleSide,
@@ -200,7 +197,6 @@ const planets = {
             opacity: 0.6,
           });
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.rotation.x = Math.PI / 25;
           return mesh;
         },
       },
@@ -212,6 +208,7 @@ const planets = {
     selfSpeedRotationRatio: 2.4,
     sunOrbitRotationSpeed: 0.00096,
     radiusOffset: 800,
+    rotation: new THREE.Euler(-Math.PI / 15, 0, 0),
   },
   uranus: {
     satellites: {
@@ -219,12 +216,12 @@ const planets = {
         name: 'ring',
         selfSpeedRotationRatio: 0,
         create(planet, config) {
-          const geometry = new XRringGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 32, 5, 0, Math.PI * 2);
+          const geometry = new XRringGeometry(1.2 * config.radius(planet.sizeRatio), 2 * config.radius(planet.sizeRatio), 2 * 64, 5, 0, Math.PI * 2);
           const material = new THREE.MeshBasicMaterial({
             map: LOADED_TEXTURES.uranus_rings,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.6,
+            opacity: 0.4,
           });
           const mesh = new THREE.Mesh(geometry, material);
           return mesh;
@@ -274,7 +271,7 @@ class SolarSystem {
     this.enableSunOrbitAnimate = true;
     this.enableSelfOrbitAnimate = true;
 
-    this.meshPlanets = [];
+    this.planetsObjects = [];
     this.meshOrbits = [];
 
     this.animations = [];
@@ -336,17 +333,14 @@ class SolarSystem {
       this.mouse.y = -(event.changedTouches[0].pageY / window.innerHeight) * 2 + 1;
 
       requestAnimationFrame(() => {
-        const intersects = this.raycaster.intersectObjects(this.getMeshPlanets());
+        const planetMeshes = this.getPlanetsObjects().map(obj => obj.children[0]);
+        const intersects = this.raycaster.intersectObjects(planetMeshes);
         if (intersects.length > 0) {
-          let intersectsCurrent;
-          intersects.forEach((obj) => {
-            if (intersectsCurrent) return;
-            if (obj.object === this.targetObject) {
-              intersectsCurrent = true;
-              return;
-            }
-            this.runToPlanet(obj.object.name);
-          });
+          const target = intersects[0].object;
+          if (target.parent === this.targetObject) {
+            return;
+          }
+          this.runToPlanet(target.name);
         }
       });
     };
@@ -357,17 +351,14 @@ class SolarSystem {
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       requestAnimationFrame(() => {
-        const intersects = this.raycaster.intersectObjects(this.getMeshPlanets());
+        const planetMeshes = this.getPlanetsObjects().map(obj => obj.children[0]);
+        const intersects = this.raycaster.intersectObjects(planetMeshes);
         if (intersects.length > 0) {
-          let intersectsCurrent;
-          intersects.forEach((obj) => {
-            if (intersectsCurrent) return;
-            if (obj.object === this.targetObject) {
-              intersectsCurrent = true;
-              return;
-            }
-            this.runToPlanet(obj.object.name);
-          });
+          const target = intersects[0].object;
+          if (target.parent === this.targetObject) {
+            return;
+          }
+          this.runToPlanet(target.name);
         }
       });
     };
@@ -580,13 +571,14 @@ class SolarSystem {
     Object.keys(this.planets).forEach((k) => {
       const planet = planets[k];
       const mesh = this._createPlanetMesh(planet);
-      solarSystem.add(mesh);
-      if (planet.light) {
-        const light = new THREE.PointLight(planet.light.color, planet.light.intensity, planet.light.distance, planet.light.decay);
-        light.position.set(planet.light.position.x, planet.light.position.y, planet.light.position.z);
-        mesh.add(light);
+      const meshWrap = new THREE.Object3D();
+      if (planet.rotation) {
+        meshWrap.rotation.copy(planet.rotation);
       }
-      this.meshPlanets.push(mesh);
+      meshWrap.add(mesh);
+      meshWrap.name = planet.name;
+      solarSystem.add(meshWrap);
+      this.planetsObjects.push(meshWrap);
     });
 
     this.solarSystem = solarSystem;
@@ -685,18 +677,19 @@ class SolarSystem {
       mesh.add(cloudsMesh);
     }
 
+    if (planet.light) {
+      const light = new THREE.PointLight(planet.light.color, planet.light.intensity, planet.light.distance, planet.light.decay);
+      light.position.set(planet.light.position.x, planet.light.position.y, planet.light.position.z);
+      mesh.add(light);
+    }
+
     if (planet.position) {
       mesh.position.copy(planet.position);
-      // mesh.position.set(planet.position.x, planet.position.y, planet.position.z);
     }
 
     if (planet.radius) {
       mesh.position.x = planet.radius;
       mesh.position.z = planet.radius;
-    }
-
-    if (planet.rotation) {
-      mesh.rotation.copy(planet.rotation);
     }
 
     return mesh;
@@ -760,7 +753,7 @@ class SolarSystem {
      * Z - blue
      */
   showAxios() {
-    this.getMeshPlanets().forEach((item) => {
+    this.getPlanetsObjects().forEach((item) => {
       const axes = new THREE.AxesHelper(30);
       axes.material.depthTest = false;
       axes.renderOrder = 1;
@@ -773,8 +766,12 @@ class SolarSystem {
     return this.solarSystem;
   }
 
-  getMeshPlanets() {
-    return this.meshPlanets;
+  getPlanetsObjects() {
+    return this.planetsObjects;
+  }
+
+  getPlanetsMeshes() {
+    return this.planetsObjects.map(obj => obj.children[0]);
   }
 
   getMeshOrbits() {
@@ -786,7 +783,8 @@ class SolarSystem {
    * @param {*} stopPlanet
    */
   animate() {
-    this.getMeshPlanets().forEach((item) => {
+    this.getPlanetsObjects().forEach((wrap) => {
+      const item = wrap.children[0];
       if (item.name === 'sun') {
         return;
       }
@@ -794,7 +792,7 @@ class SolarSystem {
       const planet = planets[item.name];
 
       if (this.enableSunOrbitAnimate && !this.targetObject) {
-        this.runBySunOrbit(planet, item);
+        this.runBySunOrbit(planet, wrap);
       }
 
       if (this.enableSelfOrbitAnimate) {
@@ -913,7 +911,7 @@ class SolarSystem {
    */
   runToPlanet(objectName, { duration = 2000, onComplete } = {}) {
     const { camera, controls } = this;
-    const targetObject = this.getMeshPlanets().filter(obj => obj.name === objectName)[0];
+    const targetObject = this.getPlanetsObjects().filter(obj => obj.name === objectName)[0];
     if (!targetObject || targetObject === this.targetObject) return;
     if (!this.targetObject) {
       // Save overview state
